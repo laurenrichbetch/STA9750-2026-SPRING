@@ -1,0 +1,12 @@
+---
+title: "LAUREN RICH MINI PROJECTS"
+---
+<h3>About me: </h3>
+<p>Vice President Analytics, Dog Lover, 200 YTT Certified, UTSA 3.0, Plant-based, MS Statistics Graduate Student</p>
+
+```{r}
+#| include: false
+1+1
+```
+--------------
+Last Updated: `r format(Sys.time(), "%A %m %d, %Y at %H:%M%p")`
