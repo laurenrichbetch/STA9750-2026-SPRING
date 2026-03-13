@@ -1,5 +1,264 @@
----
-title: "Mini Project 02"
-author: "L RICH"
----
+# 1. Loyola: Base table with Grand Total
+Loyola_yearly <- IPEDS |>
+  filter(institution_name == "Loyola University Maryland") |>
+  group_by(year) |>
+  summarize(
+    aian        = sum(enrollment_m_aian + enrollment_f_aian, na.rm = TRUE),
+    asian       = sum(enrollment_m_asia + enrollment_f_asia, na.rm = TRUE),
+    black       = sum(enrollment_m_bkaa + enrollment_f_bkaa, na.rm = TRUE),
+    hispanic    = sum(enrollment_m_hisp + enrollment_f_hisp, na.rm = TRUE),
+    nhpi        = sum(enrollment_m_nhpi + enrollment_f_nhpi, na.rm = TRUE),
+    white       = sum(enrollment_m_whit + enrollment_f_whit, na.rm = TRUE),
+    two_or_more = sum(enrollment_m_2mor + enrollment_f_2mor, na.rm = TRUE),
+    unknown     = sum(enrollment_m_unkn + enrollment_f_unkn, na.rm = TRUE),
+    nonresident = sum(enrollment_m_nral + enrollment_f_nral, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  mutate(
+    `Grand Total` = aian + asian + black + hispanic + nhpi +
+      white + two_or_more + unknown + nonresident
+  )
 
+# 2. Loyola: YoY % change for Grand Total
+Loyola_yearly_pct <- Loyola_yearly |>
+  mutate(
+    pct_grand_total =
+      (`Grand Total` - lag(`Grand Total`)) / lag(`Grand Total`) * 100
+  )
+
+
+# 1. IPEDS: Base table with Grand Total
+IPEDS_yearly <- IPEDS |>
+  group_by(year) |>
+  summarize(
+    aian        = sum(enrollment_m_aian + enrollment_f_aian, na.rm = TRUE),
+    asian       = sum(enrollment_m_asia + enrollment_f_asia, na.rm = TRUE),
+    black       = sum(enrollment_m_bkaa + enrollment_f_bkaa, na.rm = TRUE),
+    hispanic    = sum(enrollment_m_hisp + enrollment_f_hisp, na.rm = TRUE),
+    nhpi        = sum(enrollment_m_nhpi + enrollment_f_nhpi, na.rm = TRUE),
+    white       = sum(enrollment_m_whit + enrollment_f_whit, na.rm = TRUE),
+    two_or_more = sum(enrollment_m_2mor + enrollment_f_2mor, na.rm = TRUE),
+    unknown     = sum(enrollment_m_unkn + enrollment_f_unkn, na.rm = TRUE),
+    nonresident = sum(enrollment_m_nral + enrollment_f_nral, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  mutate(
+    `Grand Total` = aian + asian + black + hispanic + nhpi +
+      white + two_or_more + unknown + nonresident
+  )
+
+# 2. IPEDS: YoY % change for Grand Total
+IPEDS_yearly_pct <- IPEDS_yearly |>
+  mutate(
+    pct_grand_total =
+      (`Grand Total` - lag(`Grand Total`)) / lag(`Grand Total`) * 100
+  )
+
+
+# Preview names
+names(IPEDS_yearly_pct)
+
+# Basic GT table
+IPEDS_yearly_pct |>
+  gt() |>
+  fmt_number(
+    columns = c(
+      aian, asian, black, hispanic, nhpi, white,
+      two_or_more, unknown, nonresident, `Grand Total`
+    ),
+    decimals = 0
+  ) |>
+  fmt_percent(
+    columns = pct_grand_total,
+    decimals = 1,
+    scale_values = FALSE
+  ) |>
+  cols_label(
+    `Grand Total`   = "Grand Total",
+    pct_grand_total = "YoY % Change (Grand Total)"
+  )
+
+
+# Expanded YoY % change table (all races + total)
+IPEDS_yearly_pct <- IPEDS_yearly |>
+  mutate(
+    pct_aian        = (aian        - lag(aian))        / lag(aian)        * 100,
+    pct_asian       = (asian       - lag(asian))       / lag(asian)       * 100,
+    pct_black       = (black       - lag(black))       / lag(black)       * 100,
+    pct_hispanic    = (hispanic    - lag(hispanic))    / lag(hispanic)    * 100,
+    pct_nhpi        = (nhpi        - lag(nhpi))        / lag(nhpi)        * 100,
+    pct_white       = (white       - lag(white))       / lag(white)       * 100,
+    pct_two_or_more = (two_or_more - lag(two_or_more)) / lag(two_or_more) * 100,
+    pct_unknown     = (unknown     - lag(unknown))     / lag(unknown)     * 100,
+    pct_nonresident = (nonresident - lag(nonresident)) / lag(nonresident) * 100,
+    pct_grand_total = (`Grand Total` - lag(`Grand Total`)) /
+                      lag(`Grand Total`) * 100
+  )
+
+# Full GT table with YoY % for all groups
+IPEDS_yearly_pct |>
+  gt() |>
+  fmt_number(
+    columns = c(
+      aian, asian, black, hispanic, nhpi, white,
+      two_or_more, unknown, nonresident, `Grand Total`
+    ),
+    decimals = 0
+  ) |>
+  fmt_percent(
+    columns = c(
+      pct_aian, pct_asian, pct_black, pct_hispanic, pct_nhpi,
+      pct_white, pct_two_or_more, pct_unknown, pct_nonresident,
+      pct_grand_total
+    ),
+    decimals = 1,
+    scale_values = FALSE
+  ) |>
+  cols_label(
+    year            = "Year",
+    aian            = "AIAN",
+    asian           = "Asian",
+    black           = "Black",
+    hispanic        = "Hispanic",
+    nhpi            = "NHPI",
+    white           = "White",
+    two_or_more     = "Two or More",
+    unknown         = "Unknown",
+    nonresident     = "Nonresident",
+    `Grand Total`   = "Grand Total",
+    pct_aian        = "YoY % AIAN",
+    pct_asian       = "YoY % Asian",
+    pct_black       = "YoY % Black",
+    pct_hispanic    = "YoY % Hispanic",
+    pct_nhpi        = "YoY % NHPI",
+    pct_white       = "YoY % White",
+    pct_two_or_more = "YoY % Two+",
+    pct_unknown     = "YoY % Unknown",
+    pct_nonresident = "YoY % Nonresident",
+    pct_grand_total = "YoY % Grand Total"
+  ) |>
+  tab_style(
+    style = list(cell_text(weight = "bold", transform = "uppercase")),
+    locations = cells_column_labels(everything())
+  )
+
+
+
+# 1. Base table with Grand Total (NATIONAL TOTALS)
+IPEDS_yearly <- IPEDS |>
+  group_by(year) |>
+  summarize(
+    aian        = sum(enrollment_m_aian + enrollment_f_aian, na.rm = TRUE),
+    asian       = sum(enrollment_m_asia + enrollment_f_asia, na.rm = TRUE),
+    black       = sum(enrollment_m_bkaa + enrollment_f_bkaa, na.rm = TRUE),
+    hispanic    = sum(enrollment_m_hisp + enrollment_f_hisp, na.rm = TRUE),
+    nhpi        = sum(enrollment_m_nhpi + enrollment_f_nhpi, na.rm = TRUE),
+    white       = sum(enrollment_m_whit + enrollment_f_whit, na.rm = TRUE),
+    two_or_more = sum(enrollment_m_2mor + enrollment_f_2mor, na.rm = TRUE),
+    unknown     = sum(enrollment_m_unkn + enrollment_f_unkn, na.rm = TRUE),
+    nonresident = sum(enrollment_m_nral + enrollment_f_nral, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  mutate(
+    `Grand Total` = aian + asian + black + hispanic + nhpi +
+      white + two_or_more + unknown + nonresident
+  )
+
+# 2. Add YoY % change for Grand Total
+IPEDS_yearly_pct <- IPEDS_yearly |>
+  mutate(
+    pct_grand_total =
+      (`Grand Total` - lag(`Grand Total`)) / lag(`Grand Total`) * 100
+  )
+
+
+# Build IPEDS_yearly
+# (already done above)
+
+# Build IPEDS_yearly_pct
+# (already done above)
+
+
+names(IPEDS_yearly_pct)
+
+IPEDS_yearly_pct |>
+  gt() |>
+  fmt_number(
+    columns = c(
+      aian, asian, black, hispanic, nhpi, white,
+      two_or_more, unknown, nonresident, `Grand Total`
+    ),
+    decimals = 0
+  ) |>
+  fmt_percent(
+    columns = pct_grand_total,
+    decimals = 1,
+    scale_values = FALSE
+  ) |>
+  cols_label(
+    `Grand Total`   = "Grand Total",
+    pct_grand_total = "YoY % Change (Grand Total)"
+  )
+
+
+# Expanded YoY % change table (all race groups + total)
+IPEDS_yearly_pct <- IPEDS_yearly |>
+  mutate(
+    pct_aian        = (aian        - lag(aian))        / lag(aian)        * 100,
+    pct_asian       = (asian       - lag(asian))       / lag(asian)       * 100,
+    pct_black       = (black       - lag(black))       / lag(black)       * 100,
+    pct_hispanic    = (hispanic    - lag(hispanic))    / lag(hispanic)    * 100,
+    pct_nhpi        = (nhpi        - lag(nhpi))        / lag(nhpi)        * 100,
+    pct_white       = (white       - lag(white))       / lag(white)       * 100,
+    pct_two_or_more = (two_or_more - lag(two_or_more)) / lag(two_or_more) * 100,
+    pct_unknown     = (unknown     - lag(unknown))     / lag(unknown)     * 100,
+    pct_nonresident = (nonresident - lag(nonresident)) / lag(nonresident) * 100,
+    pct_grand_total = (`Grand Total` - lag(`Grand Total`)) /
+                      lag(`Grand Total`) * 100
+  )
+
+IPEDS_yearly_pct |>
+  gt() |>
+  fmt_number(
+    columns = c(
+      aian, asian, black, hispanic, nhpi, white,
+      two_or_more, unknown, nonresident, `Grand Total`
+    ),
+    decimals = 0
+  ) |>
+  fmt_percent(
+    columns = c(
+      pct_aian, pct_asian, pct_black, pct_hispanic, pct_nhpi,
+      pct_white, pct_two_or_more, pct_unknown, pct_nonresident,
+      pct_grand_total
+    ),
+    decimals = 1,
+    scale_values = FALSE
+  ) |>
+  cols_label(
+    year            = "Year",
+    aian            = "AIAN",
+    asian           = "Asian",
+    black           = "Black",
+    hispanic        = "Hispanic",
+    nhpi            = "NHPI",
+    white           = "White",
+    two_or_more     = "Two or More",
+    unknown         = "Unknown",
+    nonresident     = "Nonresident",
+    `Grand Total`   = "Grand Total",
+    pct_aian        = "YoY % AIAN",
+    pct_asian       = "YoY % Asian",
+    pct_black       = "YoY % Black",
+    pct_hispanic    = "YoY % Hispanic",
+    pct_nhpi        = "YoY % NHPI",
+    pct_white       = "YoY % White",
+    pct_two_or_more = "YoY % Two+",
+    pct_unknown     = "YoY % Unknown",
+    pct_nonresident = "YoY % Nonresident",
+    pct_grand_total = "YoY % Grand Total"
+  ) |>
+  tab_style(
+    style = list(cell_text(weight = "bold", transform = "uppercase")),
+    locations = cells_column_labels(everything())
+  )

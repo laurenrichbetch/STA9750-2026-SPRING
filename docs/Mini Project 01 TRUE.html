@@ -6,9 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="L RICH">
 
-<title>Mini Project 02 – STA 9750 Submission Material</title>
+<title>mini-project-01-true – STA 9750 Submission Material</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -95,35 +94,72 @@ ul.task-list li input[type="checkbox"] {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content" id="quarto-document-content">
-
-<header id="title-block-header" class="quarto-title-block default">
-<div class="quarto-title">
-<h1 class="title">Mini Project 02</h1>
-</div>
-
-
-
-<div class="quarto-title-meta">
-
-    <div>
-    <div class="quarto-title-meta-heading">Author</div>
-    <div class="quarto-title-meta-contents">
-             <p>L RICH </p>
-          </div>
-  </div>
-    
-  
-    
-  </div>
-  
-
-
-</header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
 
 
 
 
+<section id="loyola-base-table-with-grand-total" class="level1">
+<h1>1. Loyola: Base table with Grand Total</h1>
+<p>Loyola_yearly &lt;- IPEDS |&gt; filter(institution_name == “Loyola University Maryland”) |&gt; group_by(year) |&gt; summarize( aian = sum(enrollment_m_aian + enrollment_f_aian, na.rm = TRUE), asian = sum(enrollment_m_asia + enrollment_f_asia, na.rm = TRUE), black = sum(enrollment_m_bkaa + enrollment_f_bkaa, na.rm = TRUE), hispanic = sum(enrollment_m_hisp + enrollment_f_hisp, na.rm = TRUE), nhpi = sum(enrollment_m_nhpi + enrollment_f_nhpi, na.rm = TRUE), white = sum(enrollment_m_whit + enrollment_f_whit, na.rm = TRUE), two_or_more = sum(enrollment_m_2mor + enrollment_f_2mor, na.rm = TRUE), unknown = sum(enrollment_m_unkn + enrollment_f_unkn, na.rm = TRUE), nonresident = sum(enrollment_m_nral + enrollment_f_nral, na.rm = TRUE), .groups = “drop” ) |&gt; mutate( <code>Grand Total</code> = aian + asian + black + hispanic + nhpi + white + two_or_more + unknown + nonresident )</p>
+</section>
+<section id="loyola-yoy-change-for-grand-total" class="level1">
+<h1>2. Loyola: YoY % change for Grand Total</h1>
+<p>Loyola_yearly_pct &lt;- Loyola_yearly |&gt; mutate( pct_grand_total = (<code>Grand Total</code> - lag(<code>Grand Total</code>)) / lag(<code>Grand Total</code>) * 100 )</p>
+</section>
+<section id="ipeds-base-table-with-grand-total" class="level1">
+<h1>1. IPEDS: Base table with Grand Total</h1>
+<p>IPEDS_yearly &lt;- IPEDS |&gt; group_by(year) |&gt; summarize( aian = sum(enrollment_m_aian + enrollment_f_aian, na.rm = TRUE), asian = sum(enrollment_m_asia + enrollment_f_asia, na.rm = TRUE), black = sum(enrollment_m_bkaa + enrollment_f_bkaa, na.rm = TRUE), hispanic = sum(enrollment_m_hisp + enrollment_f_hisp, na.rm = TRUE), nhpi = sum(enrollment_m_nhpi + enrollment_f_nhpi, na.rm = TRUE), white = sum(enrollment_m_whit + enrollment_f_whit, na.rm = TRUE), two_or_more = sum(enrollment_m_2mor + enrollment_f_2mor, na.rm = TRUE), unknown = sum(enrollment_m_unkn + enrollment_f_unkn, na.rm = TRUE), nonresident = sum(enrollment_m_nral + enrollment_f_nral, na.rm = TRUE), .groups = “drop” ) |&gt; mutate( <code>Grand Total</code> = aian + asian + black + hispanic + nhpi + white + two_or_more + unknown + nonresident )</p>
+</section>
+<section id="ipeds-yoy-change-for-grand-total" class="level1">
+<h1>2. IPEDS: YoY % change for Grand Total</h1>
+<p>IPEDS_yearly_pct &lt;- IPEDS_yearly |&gt; mutate( pct_grand_total = (<code>Grand Total</code> - lag(<code>Grand Total</code>)) / lag(<code>Grand Total</code>) * 100 )</p>
+</section>
+<section id="preview-names" class="level1">
+<h1>Preview names</h1>
+<p>names(IPEDS_yearly_pct)</p>
+</section>
+<section id="basic-gt-table" class="level1">
+<h1>Basic GT table</h1>
+<p>IPEDS_yearly_pct |&gt; gt() |&gt; fmt_number( columns = c( aian, asian, black, hispanic, nhpi, white, two_or_more, unknown, nonresident, <code>Grand Total</code> ), decimals = 0 ) |&gt; fmt_percent( columns = pct_grand_total, decimals = 1, scale_values = FALSE ) |&gt; cols_label( <code>Grand Total</code> = “Grand Total”, pct_grand_total = “YoY % Change (Grand Total)” )</p>
+</section>
+<section id="expanded-yoy-change-table-all-races-total" class="level1">
+<h1>Expanded YoY % change table (all races + total)</h1>
+<p>IPEDS_yearly_pct &lt;- IPEDS_yearly |&gt; mutate( pct_aian = (aian - lag(aian)) / lag(aian) * 100, pct_asian = (asian - lag(asian)) / lag(asian) * 100, pct_black = (black - lag(black)) / lag(black) * 100, pct_hispanic = (hispanic - lag(hispanic)) / lag(hispanic) * 100, pct_nhpi = (nhpi - lag(nhpi)) / lag(nhpi) * 100, pct_white = (white - lag(white)) / lag(white) * 100, pct_two_or_more = (two_or_more - lag(two_or_more)) / lag(two_or_more) * 100, pct_unknown = (unknown - lag(unknown)) / lag(unknown) * 100, pct_nonresident = (nonresident - lag(nonresident)) / lag(nonresident) * 100, pct_grand_total = (<code>Grand Total</code> - lag(<code>Grand Total</code>)) / lag(<code>Grand Total</code>) * 100 )</p>
+</section>
+<section id="full-gt-table-with-yoy-for-all-groups" class="level1">
+<h1>Full GT table with YoY % for all groups</h1>
+<p>IPEDS_yearly_pct |&gt; gt() |&gt; fmt_number( columns = c( aian, asian, black, hispanic, nhpi, white, two_or_more, unknown, nonresident, <code>Grand Total</code> ), decimals = 0 ) |&gt; fmt_percent( columns = c( pct_aian, pct_asian, pct_black, pct_hispanic, pct_nhpi, pct_white, pct_two_or_more, pct_unknown, pct_nonresident, pct_grand_total ), decimals = 1, scale_values = FALSE ) |&gt; cols_label( year = “Year”, aian = “AIAN”, asian = “Asian”, black = “Black”, hispanic = “Hispanic”, nhpi = “NHPI”, white = “White”, two_or_more = “Two or More”, unknown = “Unknown”, nonresident = “Nonresident”, <code>Grand Total</code> = “Grand Total”, pct_aian = “YoY % AIAN”, pct_asian = “YoY % Asian”, pct_black = “YoY % Black”, pct_hispanic = “YoY % Hispanic”, pct_nhpi = “YoY % NHPI”, pct_white = “YoY % White”, pct_two_or_more = “YoY % Two+”, pct_unknown = “YoY % Unknown”, pct_nonresident = “YoY % Nonresident”, pct_grand_total = “YoY % Grand Total” ) |&gt; tab_style( style = list(cell_text(weight = “bold”, transform = “uppercase”)), locations = cells_column_labels(everything()) )</p>
+</section>
+<section id="base-table-with-grand-total-national-totals" class="level1">
+<h1>1. Base table with Grand Total (NATIONAL TOTALS)</h1>
+<p>IPEDS_yearly &lt;- IPEDS |&gt; group_by(year) |&gt; summarize( aian = sum(enrollment_m_aian + enrollment_f_aian, na.rm = TRUE), asian = sum(enrollment_m_asia + enrollment_f_asia, na.rm = TRUE), black = sum(enrollment_m_bkaa + enrollment_f_bkaa, na.rm = TRUE), hispanic = sum(enrollment_m_hisp + enrollment_f_hisp, na.rm = TRUE), nhpi = sum(enrollment_m_nhpi + enrollment_f_nhpi, na.rm = TRUE), white = sum(enrollment_m_whit + enrollment_f_whit, na.rm = TRUE), two_or_more = sum(enrollment_m_2mor + enrollment_f_2mor, na.rm = TRUE), unknown = sum(enrollment_m_unkn + enrollment_f_unkn, na.rm = TRUE), nonresident = sum(enrollment_m_nral + enrollment_f_nral, na.rm = TRUE), .groups = “drop” ) |&gt; mutate( <code>Grand Total</code> = aian + asian + black + hispanic + nhpi + white + two_or_more + unknown + nonresident )</p>
+</section>
+<section id="add-yoy-change-for-grand-total" class="level1">
+<h1>2. Add YoY % change for Grand Total</h1>
+<p>IPEDS_yearly_pct &lt;- IPEDS_yearly |&gt; mutate( pct_grand_total = (<code>Grand Total</code> - lag(<code>Grand Total</code>)) / lag(<code>Grand Total</code>) * 100 )</p>
+</section>
+<section id="build-ipeds_yearly" class="level1">
+<h1>Build IPEDS_yearly</h1>
+</section>
+<section id="already-done-above" class="level1">
+<h1>(already done above)</h1>
+</section>
+<section id="build-ipeds_yearly_pct" class="level1">
+<h1>Build IPEDS_yearly_pct</h1>
+</section>
+<section id="already-done-above-1" class="level1">
+<h1>(already done above)</h1>
+<p>names(IPEDS_yearly_pct)</p>
+<p>IPEDS_yearly_pct |&gt; gt() |&gt; fmt_number( columns = c( aian, asian, black, hispanic, nhpi, white, two_or_more, unknown, nonresident, <code>Grand Total</code> ), decimals = 0 ) |&gt; fmt_percent( columns = pct_grand_total, decimals = 1, scale_values = FALSE ) |&gt; cols_label( <code>Grand Total</code> = “Grand Total”, pct_grand_total = “YoY % Change (Grand Total)” )</p>
+</section>
+<section id="expanded-yoy-change-table-all-race-groups-total" class="level1">
+<h1>Expanded YoY % change table (all race groups + total)</h1>
+<p>IPEDS_yearly_pct &lt;- IPEDS_yearly |&gt; mutate( pct_aian = (aian - lag(aian)) / lag(aian) * 100, pct_asian = (asian - lag(asian)) / lag(asian) * 100, pct_black = (black - lag(black)) / lag(black) * 100, pct_hispanic = (hispanic - lag(hispanic)) / lag(hispanic) * 100, pct_nhpi = (nhpi - lag(nhpi)) / lag(nhpi) * 100, pct_white = (white - lag(white)) / lag(white) * 100, pct_two_or_more = (two_or_more - lag(two_or_more)) / lag(two_or_more) * 100, pct_unknown = (unknown - lag(unknown)) / lag(unknown) * 100, pct_nonresident = (nonresident - lag(nonresident)) / lag(nonresident) * 100, pct_grand_total = (<code>Grand Total</code> - lag(<code>Grand Total</code>)) / lag(<code>Grand Total</code>) * 100 )</p>
+<p>IPEDS_yearly_pct |&gt; gt() |&gt; fmt_number( columns = c( aian, asian, black, hispanic, nhpi, white, two_or_more, unknown, nonresident, <code>Grand Total</code> ), decimals = 0 ) |&gt; fmt_percent( columns = c( pct_aian, pct_asian, pct_black, pct_hispanic, pct_nhpi, pct_white, pct_two_or_more, pct_unknown, pct_nonresident, pct_grand_total ), decimals = 1, scale_values = FALSE ) |&gt; cols_label( year = “Year”, aian = “AIAN”, asian = “Asian”, black = “Black”, hispanic = “Hispanic”, nhpi = “NHPI”, white = “White”, two_or_more = “Two or More”, unknown = “Unknown”, nonresident = “Nonresident”, <code>Grand Total</code> = “Grand Total”, pct_aian = “YoY % AIAN”, pct_asian = “YoY % Asian”, pct_black = “YoY % Black”, pct_hispanic = “YoY % Hispanic”, pct_nhpi = “YoY % NHPI”, pct_white = “YoY % White”, pct_two_or_more = “YoY % Two+”, pct_unknown = “YoY % Unknown”, pct_nonresident = “YoY % Nonresident”, pct_grand_total = “YoY % Grand Total” ) |&gt; tab_style( style = list(cell_text(weight = “bold”, transform = “uppercase”)), locations = cells_column_labels(everything()) )</p>
+
+
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

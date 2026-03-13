@@ -1,0 +1,302 @@
+---
+title: "L RICH Mini Project 01"
+format: html
+---
+
+```{r}
+
+#' Acquire IPEDS Data for MP#01
+#' 
+#' This function will acquire and standardize all data for MP#01
+#' from IPEDS (https://nces.ed.gov/ipeds/datacenter/DataFiles.aspx)
+#' 
+#' We're starting in 2010 as the data seems to be reasonably complete 
+#' after that point. 
+acquire_ipeds_data <- function(start_year=2010, end_year=2024){
+    library(tidyverse)
+    library(glue)
+    
+    data_dir <- file.path("data", "mp01")
+    
+    if(!dir.exists(data_dir)){
+        dir.create(data_dir, showWarnings=FALSE, recursive=TRUE)
+    }
+    
+    YEARS <- seq(start_year, end_year)
+    
+    EFA_ALL <- map(YEARS, function(yy){
+        if(yy <= 2022){
+            ef_url <- glue("https://nces.ed.gov/ipeds/datacenter/data/EF{yy}A.zip")
+            
+        } else {
+            ef_url <- glue("https://nces.ed.gov/ipeds/data-generator?year={yy}&tableName=EF{yy}A&HasRV=0&type=csv")
+        }
+        
+        ef_file <- file.path(data_dir, glue("ef{yy}a.csv.zip"))
+        
+        if(!file.exists(ef_file)){
+            message(glue("Downloading Enrollment Data for {yy} from {ef_url}"))
+            download.file(ef_url, destfile = ef_file, quiet=TRUE, mode="wb")    
+        }
+        
+        read_csv(ef_file, 
+                 show_col_types=FALSE) |>
+            mutate(year = yy, 
+                   # American Indian or Alaskan Native
+                   enrollment_m_aian = EFAIANM, 
+                   enrollment_f_aian = EFAIANW, 
+                   # Asian
+                   enrollment_m_asia = EFASIAM, 
+                   enrollment_f_asia = EFASIAW, 
+                   # Black or African-American, 
+                   enrollment_m_bkaa = EFBKAAM, 
+                   enrollment_f_bkaa = EFBKAAW, 
+                   # Hispanic 
+                   enrollment_m_hisp = EFHISPM, 
+                   enrollment_f_hisp = EFHISPW, 
+                   # Native Hawaiian or Other Pacific Islander 
+                   enrollment_m_nhpi = EFNHPIM, 
+                   enrollment_f_nhpi = EFNHPIW, 
+                   # White
+                   enrollment_m_whit = EFWHITM, 
+                   enrollment_f_whit = EFWHITW, 
+                   # Two or More Races
+                   enrollment_m_2mor = EF2MORM, 
+                   enrollment_f_2mor = EF2MORW, 
+                   # Unknown / Undisclosed Race
+                   enrollment_m_unkn = EFUNKNM, 
+                   enrollment_f_unkn = EFUNKNW, 
+                   # US Non-Resident
+                   enrollment_m_nral = EFNRALM, 
+                   enrollment_f_nral = EFNRALW, 
+            ) |> filter(
+                (EFALEVEL %in% c(2, 12)) | (LINE %in% c(1, 15))
+                # Per 2024 Data Dictionary, 
+                # - EFALEVEL 2 = undergrad 
+                # - EFALELVE 12 = grad
+                # - Line 1 = first year first time full-time undergrad
+                # - Line 15 = first year first time part-time undergrad
+            ) |> mutate(level = case_when(
+                       EFALEVEL == 2 ~ "all undergrad", 
+                       EFALEVEL == 12 ~ "all graduate",
+                       LINE %in% c(1, 15) ~ "first year undergrad"
+                   )
+            ) |>
+            select(institution_id = UNITID, 
+                   year, 
+                   level,
+                   starts_with("enrollment_")) |>
+            group_by(institution_id, 
+                     year, 
+                     level) |>
+            summarize(across(starts_with("enrollment_"), sum), 
+                      .groups = "drop")
+        
+    }) |> bind_rows()
+    
+    DESC_ALL <- map(YEARS, function(yy){
+        if(yy <= 2022){
+            hd_url <- glue("https://nces.ed.gov/ipeds/datacenter/data/HD{yy}.zip")
+            
+        } else {
+            hd_url <- glue("https://nces.ed.gov/ipeds/data-generator?year={yy}&tableName=HD{yy}&HasRV=0&type=csv")
+        }
+        
+        hd_file <- file.path(data_dir, glue("hd{yy}.csv.zip"))
+        
+        if(!file.exists(hd_file)){
+            message(glue("Downloading Institutional Descriptions for {yy} from {hd_url}"))
+            download.file(hd_url, destfile = hd_file, quiet=TRUE, mode="wb")    
+        }
+        
+        suppressWarnings(
+            read_csv(hd_file, 
+                 show_col_types=FALSE, 
+                 locale=locale(encoding=if_else(yy==2024, "utf-8", "windows-1252"))) |>
+            mutate(year = yy, 
+                   INSTNM) |> 
+            select(institution_id = UNITID, 
+                   institution_name = INSTNM, 
+                   state = STABBR, 
+                   year)
+        )
+        
+    }) |> bind_rows()
+    
+    inner_join(EFA_ALL, 
+               DESC_ALL, 
+               join_by(institution_id == institution_id, 
+                       year == year))
+}
+
+IPEDS <- acquire_ipeds_data()
+
+# True because "CUNY" (2nd arg) is in the longer string (1st arg)
+str_detect("CUNY Bernard M. Baruch College", "CUNY")
+
+# False because "Hunter" is nowhere in the first argument
+str_detect("CUNY Bernard M. Baruch College", "Hunter")
+
+names <- c("City College-Miami", "CUNY City College", "CUNY Hunter College")
+str_detect(names, "CUNY")
+
+# Look at data
+head(IPEDS, 10)
+
+# is CUNY
+IPEDS <- IPEDS |>
+    mutate(is_cuny = str_detect(institution_name, "CUNY"))
+    
+# Check that is CUNY worked
+head(IPEDS |> select(institution_name, is_cuny), 10)
+
+# Cali
+IPEDS <- IPEDS |>
+    mutate(
+        is_calpublic =
+            str_detect(institution_name, "University of California") |
+            str_detect(institution_name, "California State")
+    )
+
+# Check data
+IPEDS |>
+    filter(is_calpublic) |>
+    distinct(institution_id, institution_name, state) |>
+    arrange(institution_name)
+
+# Loyola
+
+# Base table with Grand Total
+Loyola_yearly <- IPEDS |>
+  filter(institution_name == "Loyola University Maryland") |>
+  group_by(year) |>
+  summarize(
+    aian        = sum(enrollment_m_aian + enrollment_f_aian, na.rm = TRUE),
+    asian       = sum(enrollment_m_asia + enrollment_f_asia, na.rm = TRUE),
+    black       = sum(enrollment_m_bkaa + enrollment_f_bkaa, na.rm = TRUE),
+    hispanic    = sum(enrollment_m_hisp + enrollment_f_hisp, na.rm = TRUE),
+    nhpi        = sum(enrollment_m_nhpi + enrollment_f_nhpi, na.rm = TRUE),
+    white       = sum(enrollment_m_whit + enrollment_f_whit, na.rm = TRUE),
+    two_or_more = sum(enrollment_m_2mor + enrollment_f_2mor, na.rm = TRUE),
+    unknown     = sum(enrollment_m_unkn + enrollment_f_unkn, na.rm = TRUE),
+    nonresident = sum(enrollment_m_nral + enrollment_f_nral, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  mutate(
+    `Grand Total` = aian + asian + black + hispanic + nhpi +
+                    white + two_or_more + unknown + nonresident
+  )
+
+# Loyola: YoY % change
+Loyola_yearly_pct <- Loyola_yearly |>
+  mutate(
+    pct_grand_total =
+      (`Grand Total` - lag(`Grand Total`)) / lag(`Grand Total`) * 100
+  )
+
+# National: 
+
+# Base table with Grand Total
+IPEDS_yearly <- IPEDS |>
+  group_by(year) |>
+  summarize(
+    aian        = sum(enrollment_m_aian + enrollment_f_aian, na.rm = TRUE),
+    asian       = sum(enrollment_m_asia + enrollment_f_asia, na.rm = TRUE),
+    black       = sum(enrollment_m_bkaa + enrollment_f_bkaa, na.rm = TRUE),
+    hispanic    = sum(enrollment_m_hisp + enrollment_f_hisp, na.rm = TRUE),
+    nhpi        = sum(enrollment_m_nhpi + enrollment_f_nhpi, na.rm = TRUE),
+    white       = sum(enrollment_m_whit + enrollment_f_whit, na.rm = TRUE),
+    two_or_more = sum(enrollment_m_2mor + enrollment_f_2mor, na.rm = TRUE),
+    unknown     = sum(enrollment_m_unkn + enrollment_f_unkn, na.rm = TRUE),
+    nonresident = sum(enrollment_m_nral + enrollment_f_nral, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  mutate(
+    `Grand Total` = aian + asian + black + hispanic + nhpi +
+                    white + two_or_more + unknown + nonresident
+  )
+
+# National: YoY % change
+IPEDS_yearly_pct <- IPEDS_yearly |>
+  mutate(
+    pct_grand_total =
+      (`Grand Total` - lag(`Grand Total`)) / lag(`Grand Total`) * 100
+  )
+  
+IPEDS_yearly_pct <- IPEDS_yearly |>
+  mutate(
+    pct_aian        = (aian        - lag(aian))        / lag(aian)        * 100,
+    pct_asian       = (asian       - lag(asian))       / lag(asian)       * 100,
+    pct_black       = (black       - lag(black))       / lag(black)       * 100,
+    pct_hispanic    = (hispanic    - lag(hispanic))    / lag(hispanic)    * 100,
+    pct_nhpi        = (nhpi        - lag(nhpi))        / lag(nhpi)        * 100,
+    pct_white       = (white       - lag(white))       / lag(white)       * 100,
+    pct_two_or_more = (two_or_more - lag(two_or_more)) / lag(two_or_more) * 100,
+    pct_unknown     = (unknown     - lag(unknown))     / lag(unknown)     * 100,
+    pct_nonresident = (nonresident - lag(nonresident)) / lag(nonresident) * 100,
+    pct_grand_total = (`Grand Total` - lag(`Grand Total`)) /
+                      lag(`Grand Total`) * 100
+  )
+  
+# Loyola: YoY % change
+Loyola_yearly_pct <- Loyola_yearly |>
+  mutate(
+    pct_aian        = (aian        - lag(aian))        / lag(aian)        * 100,
+    pct_asian       = (asian       - lag(asian))       / lag(asian)       * 100,
+    pct_black       = (black       - lag(black))       / lag(black)       * 100,
+    pct_hispanic    = (hispanic    - lag(hispanic))    / lag(hispanic)    * 100,
+    pct_nhpi        = (nhpi        - lag(nhpi))        / lag(nhpi)        * 100,
+    pct_white       = (white       - lag(white))       / lag(white)       * 100,
+    pct_two_or_more = (two_or_more - lag(two_or_more)) / lag(two_or_more) * 100,
+    pct_unknown     = (unknown     - lag(unknown))     / lag(unknown)     * 100,
+    pct_nonresident = (nonresident - lag(nonresident)) / lag(nonresident) * 100,
+    pct_grand_total = (`Grand Total` - lag(`Grand Total`)) /
+                      lag(`Grand Total`) * 100
+  )
+
+#' Library GT
+library(gt)
+
+#' View tables
+IPEDS_yearly_pct |> gt()
+
+#' Formatting
+format_gt_table <- function(gt_table, title_text) {
+  gt_table |>
+    fmt_number(
+      columns = c(
+        aian, asian, black, hispanic, nhpi, white,
+        two_or_more, unknown, nonresident, `Grand Total`
+      ),
+      decimals = 0
+    ) |>
+    fmt_percent(
+      columns = starts_with("pct_"),
+      decimals = 1,
+      scale_values = FALSE
+    ) |>
+    fmt_missing(
+      columns = everything(),
+      missing_text = "-"
+    ) |>
+    tab_header(
+      title = md(glue("**{title_text}**"))
+    ) |>
+    tab_style(
+      style = cell_text(weight = "bold"),
+      locations = cells_column_labels(everything())
+    )
+}
+
+#' View national table with formatting
+IPEDS_yearly_pct |>
+  gt() |>
+  format_gt_table("National enrollment YoY trends")
+  
+#' View loyola table with formatting
+Loyola_yearly_pct |>
+  gt() |>
+  tab_header(title = "Loyola Maryland enrollment YoY trends")
+  
+```
+
