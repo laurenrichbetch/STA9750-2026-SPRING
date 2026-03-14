@@ -1,0 +1,8 @@
+---
+title: "STA9750 Spring 2026"
+---
+
+Welcome to my mini project site.
+
+- MP01
+- MP02

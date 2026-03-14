@@ -20,41 +20,6 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
 </style>
 
 
@@ -150,361 +115,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<section id="national-enrollment-yoy-trends" class="level1">
+<h1>## National Enrollment YoY Trends</h1>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#' Acquire IPEDS Data for MP#01</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#' </span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">#' This function will acquire and standardize all data for MP#01</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">#' from IPEDS (https://nces.ed.gov/ipeds/datacenter/DataFiles.aspx)</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#' </span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co">#' We're starting in 2010 as the data seems to be reasonably complete </span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">#' after that point. </span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>acquire_ipeds_data <span class="ot">&lt;-</span> <span class="cf">function</span>(<span class="at">start_year=</span><span class="dv">2010</span>, <span class="at">end_year=</span><span class="dv">2024</span>){</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">library</span>(tidyverse)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">library</span>(glue)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    data_dir <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"data"</span>, <span class="st">"mp01"</span>)</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span>(<span class="sc">!</span><span class="fu">dir.exists</span>(data_dir)){</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>        <span class="fu">dir.create</span>(data_dir, <span class="at">showWarnings=</span><span class="cn">FALSE</span>, <span class="at">recursive=</span><span class="cn">TRUE</span>)</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    YEARS <span class="ot">&lt;-</span> <span class="fu">seq</span>(start_year, end_year)</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    EFA_ALL <span class="ot">&lt;-</span> <span class="fu">map</span>(YEARS, <span class="cf">function</span>(yy){</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span>(yy <span class="sc">&lt;=</span> <span class="dv">2022</span>){</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>            ef_url <span class="ot">&lt;-</span> <span class="fu">glue</span>(<span class="st">"https://nces.ed.gov/ipeds/datacenter/data/EF{yy}A.zip"</span>)</span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> {</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>            ef_url <span class="ot">&lt;-</span> <span class="fu">glue</span>(<span class="st">"https://nces.ed.gov/ipeds/data-generator?year={yy}&amp;tableName=EF{yy}A&amp;HasRV=0&amp;type=csv"</span>)</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        ef_file <span class="ot">&lt;-</span> <span class="fu">file.path</span>(data_dir, <span class="fu">glue</span>(<span class="st">"ef{yy}a.csv.zip"</span>))</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(ef_file)){</span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>            <span class="fu">message</span>(<span class="fu">glue</span>(<span class="st">"Downloading Enrollment Data for {yy} from {ef_url}"</span>))</span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>            <span class="fu">download.file</span>(ef_url, <span class="at">destfile =</span> ef_file, <span class="at">quiet=</span><span class="cn">TRUE</span>, <span class="at">mode=</span><span class="st">"wb"</span>)    </span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>        <span class="fu">read_csv</span>(ef_file, </span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>                 <span class="at">show_col_types=</span><span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>            <span class="fu">mutate</span>(<span class="at">year =</span> yy, </span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>                   <span class="co"># American Indian or Alaskan Native</span></span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_m_aian =</span> EFAIANM, </span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_f_aian =</span> EFAIANW, </span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>                   <span class="co"># Asian</span></span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_m_asia =</span> EFASIAM, </span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_f_asia =</span> EFASIAW, </span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>                   <span class="co"># Black or African-American, </span></span>
-<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_m_bkaa =</span> EFBKAAM, </span>
-<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_f_bkaa =</span> EFBKAAW, </span>
-<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>                   <span class="co"># Hispanic </span></span>
-<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_m_hisp =</span> EFHISPM, </span>
-<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_f_hisp =</span> EFHISPW, </span>
-<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>                   <span class="co"># Native Hawaiian or Other Pacific Islander </span></span>
-<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_m_nhpi =</span> EFNHPIM, </span>
-<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_f_nhpi =</span> EFNHPIW, </span>
-<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>                   <span class="co"># White</span></span>
-<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_m_whit =</span> EFWHITM, </span>
-<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_f_whit =</span> EFWHITW, </span>
-<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>                   <span class="co"># Two or More Races</span></span>
-<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_m_2mor =</span> EF2MORM, </span>
-<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_f_2mor =</span> EF2MORW, </span>
-<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>                   <span class="co"># Unknown / Undisclosed Race</span></span>
-<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_m_unkn =</span> EFUNKNM, </span>
-<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_f_unkn =</span> EFUNKNW, </span>
-<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>                   <span class="co"># US Non-Resident</span></span>
-<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_m_nral =</span> EFNRALM, </span>
-<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>                   <span class="at">enrollment_f_nral =</span> EFNRALW, </span>
-<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>            ) <span class="sc">|&gt;</span> <span class="fu">filter</span>(</span>
-<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>                (EFALEVEL <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">12</span>)) <span class="sc">|</span> (LINE <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">15</span>))</span>
-<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Per 2024 Data Dictionary, </span></span>
-<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>                <span class="co"># - EFALEVEL 2 = undergrad </span></span>
-<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>                <span class="co"># - EFALELVE 12 = grad</span></span>
-<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>                <span class="co"># - Line 1 = first year first time full-time undergrad</span></span>
-<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>                <span class="co"># - Line 15 = first year first time part-time undergrad</span></span>
-<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a>            ) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">level =</span> <span class="fu">case_when</span>(</span>
-<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>                       EFALEVEL <span class="sc">==</span> <span class="dv">2</span> <span class="sc">~</span> <span class="st">"all undergrad"</span>, </span>
-<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>                       EFALEVEL <span class="sc">==</span> <span class="dv">12</span> <span class="sc">~</span> <span class="st">"all graduate"</span>,</span>
-<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>                       LINE <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">15</span>) <span class="sc">~</span> <span class="st">"first year undergrad"</span></span>
-<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a>                   )</span>
-<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a>            ) <span class="sc">|&gt;</span></span>
-<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a>            <span class="fu">select</span>(<span class="at">institution_id =</span> UNITID, </span>
-<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a>                   year, </span>
-<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a>                   level,</span>
-<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a>                   <span class="fu">starts_with</span>(<span class="st">"enrollment_"</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a>            <span class="fu">group_by</span>(institution_id, </span>
-<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a>                     year, </span>
-<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a>                     level) <span class="sc">|&gt;</span></span>
-<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a>            <span class="fu">summarize</span>(<span class="fu">across</span>(<span class="fu">starts_with</span>(<span class="st">"enrollment_"</span>), sum), </span>
-<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a>                      <span class="at">.groups =</span> <span class="st">"drop"</span>)</span>
-<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb1-88"><a href="#cb1-88" aria-hidden="true" tabindex="-1"></a>    }) <span class="sc">|&gt;</span> <span class="fu">bind_rows</span>()</span>
-<span id="cb1-89"><a href="#cb1-89" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb1-90"><a href="#cb1-90" aria-hidden="true" tabindex="-1"></a>    DESC_ALL <span class="ot">&lt;-</span> <span class="fu">map</span>(YEARS, <span class="cf">function</span>(yy){</span>
-<span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span>(yy <span class="sc">&lt;=</span> <span class="dv">2022</span>){</span>
-<span id="cb1-92"><a href="#cb1-92" aria-hidden="true" tabindex="-1"></a>            hd_url <span class="ot">&lt;-</span> <span class="fu">glue</span>(<span class="st">"https://nces.ed.gov/ipeds/datacenter/data/HD{yy}.zip"</span>)</span>
-<span id="cb1-93"><a href="#cb1-93" aria-hidden="true" tabindex="-1"></a>            </span>
-<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a>        } <span class="cf">else</span> {</span>
-<span id="cb1-95"><a href="#cb1-95" aria-hidden="true" tabindex="-1"></a>            hd_url <span class="ot">&lt;-</span> <span class="fu">glue</span>(<span class="st">"https://nces.ed.gov/ipeds/data-generator?year={yy}&amp;tableName=HD{yy}&amp;HasRV=0&amp;type=csv"</span>)</span>
-<span id="cb1-96"><a href="#cb1-96" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb1-97"><a href="#cb1-97" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb1-98"><a href="#cb1-98" aria-hidden="true" tabindex="-1"></a>        hd_file <span class="ot">&lt;-</span> <span class="fu">file.path</span>(data_dir, <span class="fu">glue</span>(<span class="st">"hd{yy}.csv.zip"</span>))</span>
-<span id="cb1-99"><a href="#cb1-99" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb1-100"><a href="#cb1-100" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span>(<span class="sc">!</span><span class="fu">file.exists</span>(hd_file)){</span>
-<span id="cb1-101"><a href="#cb1-101" aria-hidden="true" tabindex="-1"></a>            <span class="fu">message</span>(<span class="fu">glue</span>(<span class="st">"Downloading Institutional Descriptions for {yy} from {hd_url}"</span>))</span>
-<span id="cb1-102"><a href="#cb1-102" aria-hidden="true" tabindex="-1"></a>            <span class="fu">download.file</span>(hd_url, <span class="at">destfile =</span> hd_file, <span class="at">quiet=</span><span class="cn">TRUE</span>, <span class="at">mode=</span><span class="st">"wb"</span>)    </span>
-<span id="cb1-103"><a href="#cb1-103" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb1-104"><a href="#cb1-104" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb1-105"><a href="#cb1-105" aria-hidden="true" tabindex="-1"></a>        <span class="fu">suppressWarnings</span>(</span>
-<span id="cb1-106"><a href="#cb1-106" aria-hidden="true" tabindex="-1"></a>            <span class="fu">read_csv</span>(hd_file, </span>
-<span id="cb1-107"><a href="#cb1-107" aria-hidden="true" tabindex="-1"></a>                 <span class="at">show_col_types=</span><span class="cn">FALSE</span>, </span>
-<span id="cb1-108"><a href="#cb1-108" aria-hidden="true" tabindex="-1"></a>                 <span class="at">locale=</span><span class="fu">locale</span>(<span class="at">encoding=</span><span class="fu">if_else</span>(yy<span class="sc">==</span><span class="dv">2024</span>, <span class="st">"utf-8"</span>, <span class="st">"windows-1252"</span>))) <span class="sc">|&gt;</span></span>
-<span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a>            <span class="fu">mutate</span>(<span class="at">year =</span> yy, </span>
-<span id="cb1-110"><a href="#cb1-110" aria-hidden="true" tabindex="-1"></a>                   INSTNM) <span class="sc">|&gt;</span> </span>
-<span id="cb1-111"><a href="#cb1-111" aria-hidden="true" tabindex="-1"></a>            <span class="fu">select</span>(<span class="at">institution_id =</span> UNITID, </span>
-<span id="cb1-112"><a href="#cb1-112" aria-hidden="true" tabindex="-1"></a>                   <span class="at">institution_name =</span> INSTNM, </span>
-<span id="cb1-113"><a href="#cb1-113" aria-hidden="true" tabindex="-1"></a>                   <span class="at">state =</span> STABBR, </span>
-<span id="cb1-114"><a href="#cb1-114" aria-hidden="true" tabindex="-1"></a>                   year)</span>
-<span id="cb1-115"><a href="#cb1-115" aria-hidden="true" tabindex="-1"></a>        )</span>
-<span id="cb1-116"><a href="#cb1-116" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb1-117"><a href="#cb1-117" aria-hidden="true" tabindex="-1"></a>    }) <span class="sc">|&gt;</span> <span class="fu">bind_rows</span>()</span>
-<span id="cb1-118"><a href="#cb1-118" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb1-119"><a href="#cb1-119" aria-hidden="true" tabindex="-1"></a>    <span class="fu">inner_join</span>(EFA_ALL, </span>
-<span id="cb1-120"><a href="#cb1-120" aria-hidden="true" tabindex="-1"></a>               DESC_ALL, </span>
-<span id="cb1-121"><a href="#cb1-121" aria-hidden="true" tabindex="-1"></a>               <span class="fu">join_by</span>(institution_id <span class="sc">==</span> institution_id, </span>
-<span id="cb1-122"><a href="#cb1-122" aria-hidden="true" tabindex="-1"></a>                       year <span class="sc">==</span> year))</span>
-<span id="cb1-123"><a href="#cb1-123" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-124"><a href="#cb1-124" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-125"><a href="#cb1-125" aria-hidden="true" tabindex="-1"></a>IPEDS <span class="ot">&lt;-</span> <span class="fu">acquire_ipeds_data</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-✔ dplyr     1.1.4     ✔ readr     2.1.6
-✔ forcats   1.0.1     ✔ stringr   1.5.2
-✔ ggplot2   4.0.0     ✔ tibble    3.3.0
-✔ lubridate 1.9.4     ✔ tidyr     1.3.1
-✔ purrr     1.1.0     
-── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-✖ dplyr::filter() masks stats::filter()
-✖ dplyr::lag()    masks stats::lag()
-ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors
-Multiple files in zip: reading 'ef2010a.csv'
-Multiple files in zip: reading 'ef2011a.csv'
-Multiple files in zip: reading 'ef2012a.csv'
-Multiple files in zip: reading 'ef2013a.csv'
-Multiple files in zip: reading 'ef2014a.csv'
-Multiple files in zip: reading 'ef2015a.csv'
-Multiple files in zip: reading 'ef2016a.csv'
-Multiple files in zip: reading 'ef2017a.csv'
-Multiple files in zip: reading 'ef2018a.csv'
-Multiple files in zip: reading 'ef2019a.csv'
-Multiple files in zip: reading 'ef2020a.csv'
-Multiple files in zip: reading 'ef2021a.csv'
-Multiple files in zip: reading 'ef2022a.csv'
-New names:
-Multiple files in zip: reading 'ef2023a.csv'</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># True because "CUNY" (2nd arg) is in the longer string (1st arg)</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str_detect</span>(<span class="st">"CUNY Bernard M. Baruch College"</span>, <span class="st">"CUNY"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] TRUE</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># False because "Hunter" is nowhere in the first argument</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str_detect</span>(<span class="st">"CUNY Bernard M. Baruch College"</span>, <span class="st">"Hunter"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] FALSE</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"City College-Miami"</span>, <span class="st">"CUNY City College"</span>, <span class="st">"CUNY Hunter College"</span>)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">str_detect</span>(names, <span class="st">"CUNY"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] FALSE  TRUE  TRUE</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Look at data</span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(IPEDS, <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 10 × 23
-   institution_id  year level                enrollment_m_aian enrollment_f_aian
-            &lt;dbl&gt; &lt;int&gt; &lt;chr&gt;                            &lt;dbl&gt;             &lt;dbl&gt;
- 1         100654  2010 all graduate                         2                 0
- 2         100654  2010 all undergrad                        2                 1
- 3         100654  2010 first year undergrad                 0                 0
- 4         100663  2010 all graduate                         5                16
- 5         100663  2010 all undergrad                       13                22
- 6         100663  2010 first year undergrad                 0                 3
- 7         100690  2010 all graduate                         0                 0
- 8         100690  2010 all undergrad                        0                 0
- 9         100690  2010 first year undergrad                 0                 0
-10         100706  2010 all graduate                        10                10
-# ℹ 18 more variables: enrollment_m_asia &lt;dbl&gt;, enrollment_f_asia &lt;dbl&gt;,
-#   enrollment_m_bkaa &lt;dbl&gt;, enrollment_f_bkaa &lt;dbl&gt;, enrollment_m_hisp &lt;dbl&gt;,
-#   enrollment_f_hisp &lt;dbl&gt;, enrollment_m_nhpi &lt;dbl&gt;, enrollment_f_nhpi &lt;dbl&gt;,
-#   enrollment_m_whit &lt;dbl&gt;, enrollment_f_whit &lt;dbl&gt;, enrollment_m_2mor &lt;dbl&gt;,
-#   enrollment_f_2mor &lt;dbl&gt;, enrollment_m_unkn &lt;dbl&gt;, enrollment_f_unkn &lt;dbl&gt;,
-#   enrollment_m_nral &lt;dbl&gt;, enrollment_f_nral &lt;dbl&gt;, institution_name &lt;chr&gt;,
-#   state &lt;chr&gt;</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># is CUNY</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>IPEDS <span class="ot">&lt;-</span> IPEDS <span class="sc">|&gt;</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">is_cuny =</span> <span class="fu">str_detect</span>(institution_name, <span class="st">"CUNY"</span>))</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Check that is CUNY worked</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(IPEDS <span class="sc">|&gt;</span> <span class="fu">select</span>(institution_name, is_cuny), <span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 10 × 2
-   institution_name                    is_cuny
-   &lt;chr&gt;                               &lt;lgl&gt;  
- 1 Alabama A &amp; M University            FALSE  
- 2 Alabama A &amp; M University            FALSE  
- 3 Alabama A &amp; M University            FALSE  
- 4 University of Alabama at Birmingham FALSE  
- 5 University of Alabama at Birmingham FALSE  
- 6 University of Alabama at Birmingham FALSE  
- 7 Amridge University                  FALSE  
- 8 Amridge University                  FALSE  
- 9 Amridge University                  FALSE  
-10 University of Alabama at Huntsville FALSE  </code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Cali</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>IPEDS <span class="ot">&lt;-</span> IPEDS <span class="sc">|&gt;</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(</span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        <span class="at">is_calpublic =</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>            <span class="fu">str_detect</span>(institution_name, <span class="st">"University of California"</span>) <span class="sc">|</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>            <span class="fu">str_detect</span>(institution_name, <span class="st">"California State"</span>)</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Check data</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>IPEDS <span class="sc">|&gt;</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(is_calpublic) <span class="sc">|&gt;</span></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">distinct</span>(institution_id, institution_name, state) <span class="sc">|&gt;</span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(institution_name)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 33 × 3
-   institution_id institution_name                                 state
-            &lt;dbl&gt; &lt;chr&gt;                                            &lt;chr&gt;
- 1         110060 Bethesda University of California                CA   
- 2         115755 California State Polytechnic University-Humboldt CA   
- 3         110529 California State Polytechnic University-Pomona   CA   
- 4         111188 California State University Maritime Academy     CA   
- 5         110486 California State University-Bakersfield          CA   
- 6         441937 California State University-Channel Islands      CA   
- 7         110538 California State University-Chico                CA   
- 8         110547 California State University-Dominguez Hills      CA   
- 9         110574 California State University-East Bay             CA   
-10         110556 California State University-Fresno               CA   
-# ℹ 23 more rows</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Loyola</span></span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Base table with Grand Total</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>Loyola_yearly <span class="ot">&lt;-</span> IPEDS <span class="sc">|&gt;</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(institution_name <span class="sc">==</span> <span class="st">"Loyola University Maryland"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(year) <span class="sc">|&gt;</span></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">aian        =</span> <span class="fu">sum</span>(enrollment_m_aian <span class="sc">+</span> enrollment_f_aian, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">asian       =</span> <span class="fu">sum</span>(enrollment_m_asia <span class="sc">+</span> enrollment_f_asia, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">black       =</span> <span class="fu">sum</span>(enrollment_m_bkaa <span class="sc">+</span> enrollment_f_bkaa, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">hispanic    =</span> <span class="fu">sum</span>(enrollment_m_hisp <span class="sc">+</span> enrollment_f_hisp, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">nhpi        =</span> <span class="fu">sum</span>(enrollment_m_nhpi <span class="sc">+</span> enrollment_f_nhpi, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">white       =</span> <span class="fu">sum</span>(enrollment_m_whit <span class="sc">+</span> enrollment_f_whit, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">two_or_more =</span> <span class="fu">sum</span>(enrollment_m_2mor <span class="sc">+</span> enrollment_f_2mor, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">unknown     =</span> <span class="fu">sum</span>(enrollment_m_unkn <span class="sc">+</span> enrollment_f_unkn, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">nonresident =</span> <span class="fu">sum</span>(enrollment_m_nral <span class="sc">+</span> enrollment_f_nral, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span></span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span> <span class="ot">=</span> aian <span class="sc">+</span> asian <span class="sc">+</span> black <span class="sc">+</span> hispanic <span class="sc">+</span> nhpi <span class="sc">+</span></span>
-<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>                    white <span class="sc">+</span> two_or_more <span class="sc">+</span> unknown <span class="sc">+</span> nonresident</span>
-<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Loyola: YoY % change</span></span>
-<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>Loyola_yearly_pct <span class="ot">&lt;-</span> Loyola_yearly <span class="sc">|&gt;</span></span>
-<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_grand_total =</span></span>
-<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>      (<span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span> <span class="sc">-</span> <span class="fu">lag</span>(<span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span>)) <span class="sc">/</span> <span class="fu">lag</span>(<span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span>) <span class="sc">*</span> <span class="dv">100</span></span>
-<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a><span class="co"># National: </span></span>
-<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Base table with Grand Total</span></span>
-<span id="cb15-34"><a href="#cb15-34" aria-hidden="true" tabindex="-1"></a>IPEDS_yearly <span class="ot">&lt;-</span> IPEDS <span class="sc">|&gt;</span></span>
-<span id="cb15-35"><a href="#cb15-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(year) <span class="sc">|&gt;</span></span>
-<span id="cb15-36"><a href="#cb15-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
-<span id="cb15-37"><a href="#cb15-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">aian        =</span> <span class="fu">sum</span>(enrollment_m_aian <span class="sc">+</span> enrollment_f_aian, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-38"><a href="#cb15-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">asian       =</span> <span class="fu">sum</span>(enrollment_m_asia <span class="sc">+</span> enrollment_f_asia, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-39"><a href="#cb15-39" aria-hidden="true" tabindex="-1"></a>    <span class="at">black       =</span> <span class="fu">sum</span>(enrollment_m_bkaa <span class="sc">+</span> enrollment_f_bkaa, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-40"><a href="#cb15-40" aria-hidden="true" tabindex="-1"></a>    <span class="at">hispanic    =</span> <span class="fu">sum</span>(enrollment_m_hisp <span class="sc">+</span> enrollment_f_hisp, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-41"><a href="#cb15-41" aria-hidden="true" tabindex="-1"></a>    <span class="at">nhpi        =</span> <span class="fu">sum</span>(enrollment_m_nhpi <span class="sc">+</span> enrollment_f_nhpi, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-42"><a href="#cb15-42" aria-hidden="true" tabindex="-1"></a>    <span class="at">white       =</span> <span class="fu">sum</span>(enrollment_m_whit <span class="sc">+</span> enrollment_f_whit, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-43"><a href="#cb15-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">two_or_more =</span> <span class="fu">sum</span>(enrollment_m_2mor <span class="sc">+</span> enrollment_f_2mor, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-44"><a href="#cb15-44" aria-hidden="true" tabindex="-1"></a>    <span class="at">unknown     =</span> <span class="fu">sum</span>(enrollment_m_unkn <span class="sc">+</span> enrollment_f_unkn, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-45"><a href="#cb15-45" aria-hidden="true" tabindex="-1"></a>    <span class="at">nonresident =</span> <span class="fu">sum</span>(enrollment_m_nral <span class="sc">+</span> enrollment_f_nral, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb15-46"><a href="#cb15-46" aria-hidden="true" tabindex="-1"></a>    <span class="at">.groups =</span> <span class="st">"drop"</span></span>
-<span id="cb15-47"><a href="#cb15-47" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
-<span id="cb15-48"><a href="#cb15-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb15-49"><a href="#cb15-49" aria-hidden="true" tabindex="-1"></a>    <span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span> <span class="ot">=</span> aian <span class="sc">+</span> asian <span class="sc">+</span> black <span class="sc">+</span> hispanic <span class="sc">+</span> nhpi <span class="sc">+</span></span>
-<span id="cb15-50"><a href="#cb15-50" aria-hidden="true" tabindex="-1"></a>                    white <span class="sc">+</span> two_or_more <span class="sc">+</span> unknown <span class="sc">+</span> nonresident</span>
-<span id="cb15-51"><a href="#cb15-51" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb15-52"><a href="#cb15-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-53"><a href="#cb15-53" aria-hidden="true" tabindex="-1"></a><span class="co"># National: YoY % change</span></span>
-<span id="cb15-54"><a href="#cb15-54" aria-hidden="true" tabindex="-1"></a>IPEDS_yearly_pct <span class="ot">&lt;-</span> IPEDS_yearly <span class="sc">|&gt;</span></span>
-<span id="cb15-55"><a href="#cb15-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb15-56"><a href="#cb15-56" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_grand_total =</span></span>
-<span id="cb15-57"><a href="#cb15-57" aria-hidden="true" tabindex="-1"></a>      (<span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span> <span class="sc">-</span> <span class="fu">lag</span>(<span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span>)) <span class="sc">/</span> <span class="fu">lag</span>(<span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span>) <span class="sc">*</span> <span class="dv">100</span></span>
-<span id="cb15-58"><a href="#cb15-58" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb15-59"><a href="#cb15-59" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb15-60"><a href="#cb15-60" aria-hidden="true" tabindex="-1"></a>IPEDS_yearly_pct <span class="ot">&lt;-</span> IPEDS_yearly <span class="sc">|&gt;</span></span>
-<span id="cb15-61"><a href="#cb15-61" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb15-62"><a href="#cb15-62" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_aian        =</span> (aian        <span class="sc">-</span> <span class="fu">lag</span>(aian))        <span class="sc">/</span> <span class="fu">lag</span>(aian)        <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-63"><a href="#cb15-63" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_asian       =</span> (asian       <span class="sc">-</span> <span class="fu">lag</span>(asian))       <span class="sc">/</span> <span class="fu">lag</span>(asian)       <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-64"><a href="#cb15-64" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_black       =</span> (black       <span class="sc">-</span> <span class="fu">lag</span>(black))       <span class="sc">/</span> <span class="fu">lag</span>(black)       <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-65"><a href="#cb15-65" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_hispanic    =</span> (hispanic    <span class="sc">-</span> <span class="fu">lag</span>(hispanic))    <span class="sc">/</span> <span class="fu">lag</span>(hispanic)    <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-66"><a href="#cb15-66" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_nhpi        =</span> (nhpi        <span class="sc">-</span> <span class="fu">lag</span>(nhpi))        <span class="sc">/</span> <span class="fu">lag</span>(nhpi)        <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-67"><a href="#cb15-67" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_white       =</span> (white       <span class="sc">-</span> <span class="fu">lag</span>(white))       <span class="sc">/</span> <span class="fu">lag</span>(white)       <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-68"><a href="#cb15-68" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_two_or_more =</span> (two_or_more <span class="sc">-</span> <span class="fu">lag</span>(two_or_more)) <span class="sc">/</span> <span class="fu">lag</span>(two_or_more) <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-69"><a href="#cb15-69" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_unknown     =</span> (unknown     <span class="sc">-</span> <span class="fu">lag</span>(unknown))     <span class="sc">/</span> <span class="fu">lag</span>(unknown)     <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-70"><a href="#cb15-70" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_nonresident =</span> (nonresident <span class="sc">-</span> <span class="fu">lag</span>(nonresident)) <span class="sc">/</span> <span class="fu">lag</span>(nonresident) <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-71"><a href="#cb15-71" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_grand_total =</span> (<span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span> <span class="sc">-</span> <span class="fu">lag</span>(<span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span>)) <span class="sc">/</span></span>
-<span id="cb15-72"><a href="#cb15-72" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">lag</span>(<span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span>) <span class="sc">*</span> <span class="dv">100</span></span>
-<span id="cb15-73"><a href="#cb15-73" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb15-74"><a href="#cb15-74" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb15-75"><a href="#cb15-75" aria-hidden="true" tabindex="-1"></a><span class="co"># Loyola: YoY % change</span></span>
-<span id="cb15-76"><a href="#cb15-76" aria-hidden="true" tabindex="-1"></a>Loyola_yearly_pct <span class="ot">&lt;-</span> Loyola_yearly <span class="sc">|&gt;</span></span>
-<span id="cb15-77"><a href="#cb15-77" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb15-78"><a href="#cb15-78" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_aian        =</span> (aian        <span class="sc">-</span> <span class="fu">lag</span>(aian))        <span class="sc">/</span> <span class="fu">lag</span>(aian)        <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-79"><a href="#cb15-79" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_asian       =</span> (asian       <span class="sc">-</span> <span class="fu">lag</span>(asian))       <span class="sc">/</span> <span class="fu">lag</span>(asian)       <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-80"><a href="#cb15-80" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_black       =</span> (black       <span class="sc">-</span> <span class="fu">lag</span>(black))       <span class="sc">/</span> <span class="fu">lag</span>(black)       <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-81"><a href="#cb15-81" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_hispanic    =</span> (hispanic    <span class="sc">-</span> <span class="fu">lag</span>(hispanic))    <span class="sc">/</span> <span class="fu">lag</span>(hispanic)    <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-82"><a href="#cb15-82" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_nhpi        =</span> (nhpi        <span class="sc">-</span> <span class="fu">lag</span>(nhpi))        <span class="sc">/</span> <span class="fu">lag</span>(nhpi)        <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-83"><a href="#cb15-83" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_white       =</span> (white       <span class="sc">-</span> <span class="fu">lag</span>(white))       <span class="sc">/</span> <span class="fu">lag</span>(white)       <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-84"><a href="#cb15-84" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_two_or_more =</span> (two_or_more <span class="sc">-</span> <span class="fu">lag</span>(two_or_more)) <span class="sc">/</span> <span class="fu">lag</span>(two_or_more) <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-85"><a href="#cb15-85" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_unknown     =</span> (unknown     <span class="sc">-</span> <span class="fu">lag</span>(unknown))     <span class="sc">/</span> <span class="fu">lag</span>(unknown)     <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-86"><a href="#cb15-86" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_nonresident =</span> (nonresident <span class="sc">-</span> <span class="fu">lag</span>(nonresident)) <span class="sc">/</span> <span class="fu">lag</span>(nonresident) <span class="sc">*</span> <span class="dv">100</span>,</span>
-<span id="cb15-87"><a href="#cb15-87" aria-hidden="true" tabindex="-1"></a>    <span class="at">pct_grand_total =</span> (<span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span> <span class="sc">-</span> <span class="fu">lag</span>(<span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span>)) <span class="sc">/</span></span>
-<span id="cb15-88"><a href="#cb15-88" aria-hidden="true" tabindex="-1"></a>                      <span class="fu">lag</span>(<span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span>) <span class="sc">*</span> <span class="dv">100</span></span>
-<span id="cb15-89"><a href="#cb15-89" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb15-90"><a href="#cb15-90" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-91"><a href="#cb15-91" aria-hidden="true" tabindex="-1"></a><span class="co">#' Library GT</span></span>
-<span id="cb15-92"><a href="#cb15-92" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gt)</span>
-<span id="cb15-93"><a href="#cb15-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-94"><a href="#cb15-94" aria-hidden="true" tabindex="-1"></a><span class="co">#' View tables</span></span>
-<span id="cb15-95"><a href="#cb15-95" aria-hidden="true" tabindex="-1"></a>IPEDS_yearly_pct <span class="sc">|&gt;</span> <span class="fu">gt</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
-<div id="syjklwcfdb" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#syjklwcfdb table {
+<div id="hexdbvhvnm" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#hexdbvhvnm table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#syjklwcfdb thead, #syjklwcfdb tbody, #syjklwcfdb tfoot, #syjklwcfdb tr, #syjklwcfdb td, #syjklwcfdb th {
+#hexdbvhvnm thead, #hexdbvhvnm tbody, #hexdbvhvnm tfoot, #hexdbvhvnm tr, #hexdbvhvnm td, #hexdbvhvnm th {
   border-style: none;
 }
 
-#syjklwcfdb p {
+#hexdbvhvnm p {
   margin: 0;
   padding: 0;
 }
 
-#syjklwcfdb .gt_table {
+#hexdbvhvnm .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -530,12 +161,12 @@ Multiple files in zip: reading 'ef2023a.csv'</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#syjklwcfdb .gt_caption {
+#hexdbvhvnm .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#syjklwcfdb .gt_title {
+#hexdbvhvnm .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -547,7 +178,7 @@ Multiple files in zip: reading 'ef2023a.csv'</code></pre>
   border-bottom-width: 0;
 }
 
-#syjklwcfdb .gt_subtitle {
+#hexdbvhvnm .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -559,7 +190,7 @@ Multiple files in zip: reading 'ef2023a.csv'</code></pre>
   border-top-width: 0;
 }
 
-#syjklwcfdb .gt_heading {
+#hexdbvhvnm .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -571,13 +202,13 @@ Multiple files in zip: reading 'ef2023a.csv'</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#syjklwcfdb .gt_bottom_border {
+#hexdbvhvnm .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#syjklwcfdb .gt_col_headings {
+#hexdbvhvnm .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -592,7 +223,7 @@ Multiple files in zip: reading 'ef2023a.csv'</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#syjklwcfdb .gt_col_heading {
+#hexdbvhvnm .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -612,7 +243,7 @@ Multiple files in zip: reading 'ef2023a.csv'</code></pre>
   overflow-x: hidden;
 }
 
-#syjklwcfdb .gt_column_spanner_outer {
+#hexdbvhvnm .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -624,15 +255,15 @@ Multiple files in zip: reading 'ef2023a.csv'</code></pre>
   padding-right: 4px;
 }
 
-#syjklwcfdb .gt_column_spanner_outer:first-child {
+#hexdbvhvnm .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#syjklwcfdb .gt_column_spanner_outer:last-child {
+#hexdbvhvnm .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#syjklwcfdb .gt_column_spanner {
+#hexdbvhvnm .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -644,11 +275,11 @@ Multiple files in zip: reading 'ef2023a.csv'</code></pre>
   width: 100%;
 }
 
-#syjklwcfdb .gt_spanner_row {
+#hexdbvhvnm .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#syjklwcfdb .gt_group_heading {
+#hexdbvhvnm .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -674,7 +305,7 @@ Multiple files in zip: reading 'ef2023a.csv'</code></pre>
   text-align: left;
 }
 
-#syjklwcfdb .gt_empty_group_heading {
+#hexdbvhvnm .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -689,15 +320,15 @@ Multiple files in zip: reading 'ef2023a.csv'</code></pre>
   vertical-align: middle;
 }
 
-#syjklwcfdb .gt_from_md > :first-child {
+#hexdbvhvnm .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#syjklwcfdb .gt_from_md > :last-child {
+#hexdbvhvnm .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#syjklwcfdb .gt_row {
+#hexdbvhvnm .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -716,7 +347,7 @@ Multiple files in zip: reading 'ef2023a.csv'</code></pre>
   overflow-x: hidden;
 }
 
-#syjklwcfdb .gt_stub {
+#hexdbvhvnm .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -729,872 +360,7 @@ Multiple files in zip: reading 'ef2023a.csv'</code></pre>
   padding-right: 5px;
 }
 
-#syjklwcfdb .gt_stub_row_group {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  text-transform: inherit;
-  border-right-style: solid;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-  padding-left: 5px;
-  padding-right: 5px;
-  vertical-align: top;
-}
-
-#syjklwcfdb .gt_row_group_first td {
-  border-top-width: 2px;
-}
-
-#syjklwcfdb .gt_row_group_first th {
-  border-top-width: 2px;
-}
-
-#syjklwcfdb .gt_summary_row {
-  color: #333333;
-  background-color: #FFFFFF;
-  text-transform: inherit;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#syjklwcfdb .gt_first_summary_row {
-  border-top-style: solid;
-  border-top-color: #D3D3D3;
-}
-
-#syjklwcfdb .gt_first_summary_row.thick {
-  border-top-width: 2px;
-}
-
-#syjklwcfdb .gt_last_summary_row {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-}
-
-#syjklwcfdb .gt_grand_summary_row {
-  color: #333333;
-  background-color: #FFFFFF;
-  text-transform: inherit;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#syjklwcfdb .gt_first_grand_summary_row {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-top-style: double;
-  border-top-width: 6px;
-  border-top-color: #D3D3D3;
-}
-
-#syjklwcfdb .gt_last_grand_summary_row_top {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-bottom-style: double;
-  border-bottom-width: 6px;
-  border-bottom-color: #D3D3D3;
-}
-
-#syjklwcfdb .gt_striped {
-  background-color: rgba(128, 128, 128, 0.05);
-}
-
-#syjklwcfdb .gt_table_body {
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-}
-
-#syjklwcfdb .gt_footnotes {
-  color: #333333;
-  background-color: #FFFFFF;
-  border-bottom-style: none;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-}
-
-#syjklwcfdb .gt_footnote {
-  margin: 0px;
-  font-size: 90%;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#syjklwcfdb .gt_sourcenotes {
-  color: #333333;
-  background-color: #FFFFFF;
-  border-bottom-style: none;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-}
-
-#syjklwcfdb .gt_sourcenote {
-  font-size: 90%;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#syjklwcfdb .gt_left {
-  text-align: left;
-}
-
-#syjklwcfdb .gt_center {
-  text-align: center;
-}
-
-#syjklwcfdb .gt_right {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-#syjklwcfdb .gt_font_normal {
-  font-weight: normal;
-}
-
-#syjklwcfdb .gt_font_bold {
-  font-weight: bold;
-}
-
-#syjklwcfdb .gt_font_italic {
-  font-style: italic;
-}
-
-#syjklwcfdb .gt_super {
-  font-size: 65%;
-}
-
-#syjklwcfdb .gt_footnote_marks {
-  font-size: 75%;
-  vertical-align: 0.4em;
-  position: initial;
-}
-
-#syjklwcfdb .gt_asterisk {
-  font-size: 100%;
-  vertical-align: 0;
-}
-
-#syjklwcfdb .gt_indent_1 {
-  text-indent: 5px;
-}
-
-#syjklwcfdb .gt_indent_2 {
-  text-indent: 10px;
-}
-
-#syjklwcfdb .gt_indent_3 {
-  text-indent: 15px;
-}
-
-#syjklwcfdb .gt_indent_4 {
-  text-indent: 20px;
-}
-
-#syjklwcfdb .gt_indent_5 {
-  text-indent: 25px;
-}
-
-#syjklwcfdb .katex-display {
-  display: inline-flex !important;
-  margin-bottom: 0.75em !important;
-}
-
-#syjklwcfdb div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
-  height: 0px !important;
-}
-</style>
-
-<table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
-<thead>
-<tr class="gt_col_headings header">
-<th id="year" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">year</th>
-<th id="aian" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">aian</th>
-<th id="asian" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">asian</th>
-<th id="black" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">black</th>
-<th id="hispanic" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">hispanic</th>
-<th id="nhpi" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">nhpi</th>
-<th id="white" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">white</th>
-<th id="two_or_more" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">two_or_more</th>
-<th id="unknown" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">unknown</th>
-<th id="nonresident" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">nonresident</th>
-<th id="Grand-Total" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Grand Total</th>
-<th id="pct_aian" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_aian</th>
-<th id="pct_asian" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_asian</th>
-<th id="pct_black" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_black</th>
-<th id="pct_hispanic" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_hispanic</th>
-<th id="pct_nhpi" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_nhpi</th>
-<th id="pct_white" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_white</th>
-<th id="pct_two_or_more" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_two_or_more</th>
-<th id="pct_unknown" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_unknown</th>
-<th id="pct_nonresident" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_nonresident</th>
-<th id="pct_grand_total" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_grand_total</th>
-</tr>
-</thead>
-<tbody class="gt_table_body">
-<tr class="odd">
-<td class="gt_row gt_right" headers="year">2010</td>
-<td class="gt_row gt_right" headers="aian">221446</td>
-<td class="gt_row gt_right" headers="asian">1306888</td>
-<td class="gt_row gt_right" headers="black">3427031</td>
-<td class="gt_row gt_right" headers="hispanic">3466355</td>
-<td class="gt_row gt_right" headers="nhpi">84281</td>
-<td class="gt_row gt_right" headers="white">13803971</td>
-<td class="gt_row gt_right" headers="two_or_more">392622</td>
-<td class="gt_row gt_right" headers="unknown">1928528</td>
-<td class="gt_row gt_right" headers="nonresident">775445</td>
-<td class="gt_row gt_right" headers="Grand Total">25406567</td>
-<td class="gt_row gt_right" headers="pct_aian">NA</td>
-<td class="gt_row gt_right" headers="pct_asian">NA</td>
-<td class="gt_row gt_right" headers="pct_black">NA</td>
-<td class="gt_row gt_right" headers="pct_hispanic">NA</td>
-<td class="gt_row gt_right" headers="pct_nhpi">NA</td>
-<td class="gt_row gt_right" headers="pct_white">NA</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">NA</td>
-<td class="gt_row gt_right" headers="pct_unknown">NA</td>
-<td class="gt_row gt_right" headers="pct_nonresident">NA</td>
-<td class="gt_row gt_right" headers="pct_grand_total">NA</td>
-</tr>
-<tr class="even">
-<td class="gt_row gt_right" headers="year">2011</td>
-<td class="gt_row gt_right" headers="aian">210595</td>
-<td class="gt_row gt_right" headers="asian">1324506</td>
-<td class="gt_row gt_right" headers="black">3479146</td>
-<td class="gt_row gt_right" headers="hispanic">3665578</td>
-<td class="gt_row gt_right" headers="nhpi">86757</td>
-<td class="gt_row gt_right" headers="white">13536963</td>
-<td class="gt_row gt_right" headers="two_or_more">508467</td>
-<td class="gt_row gt_right" headers="unknown">1624795</td>
-<td class="gt_row gt_right" headers="nonresident">815969</td>
-<td class="gt_row gt_right" headers="Grand Total">25252776</td>
-<td class="gt_row gt_right" headers="pct_aian">-4.9000659</td>
-<td class="gt_row gt_right" headers="pct_asian">1.3480880</td>
-<td class="gt_row gt_right" headers="pct_black">1.5207041</td>
-<td class="gt_row gt_right" headers="pct_hispanic">5.7473340</td>
-<td class="gt_row gt_right" headers="pct_nhpi">2.9377914</td>
-<td class="gt_row gt_right" headers="pct_white">-1.9342840</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">29.5054786</td>
-<td class="gt_row gt_right" headers="pct_unknown">-15.749473</td>
-<td class="gt_row gt_right" headers="pct_nonresident">5.2259025</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-0.6053199</td>
-</tr>
-<tr class="odd">
-<td class="gt_row gt_right" headers="year">2012</td>
-<td class="gt_row gt_right" headers="aian">195286</td>
-<td class="gt_row gt_right" headers="asian">1308456</td>
-<td class="gt_row gt_right" headers="black">3344648</td>
-<td class="gt_row gt_right" headers="hispanic">3746543</td>
-<td class="gt_row gt_right" headers="nhpi">82823</td>
-<td class="gt_row gt_right" headers="white">13124337</td>
-<td class="gt_row gt_right" headers="two_or_more">586671</td>
-<td class="gt_row gt_right" headers="unknown">1450957</td>
-<td class="gt_row gt_right" headers="nonresident">864508</td>
-<td class="gt_row gt_right" headers="Grand Total">24704229</td>
-<td class="gt_row gt_right" headers="pct_aian">-7.2694034</td>
-<td class="gt_row gt_right" headers="pct_asian">-1.2117725</td>
-<td class="gt_row gt_right" headers="pct_black">-3.8658337</td>
-<td class="gt_row gt_right" headers="pct_hispanic">2.2087922</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-4.5345044</td>
-<td class="gt_row gt_right" headers="pct_white">-3.0481431</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">15.3803492</td>
-<td class="gt_row gt_right" headers="pct_unknown">-10.699073</td>
-<td class="gt_row gt_right" headers="pct_nonresident">5.9486329</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-2.1722246</td>
-</tr>
-<tr class="even">
-<td class="gt_row gt_right" headers="year">2013</td>
-<td class="gt_row gt_right" headers="aian">185704</td>
-<td class="gt_row gt_right" headers="asian">1321967</td>
-<td class="gt_row gt_right" headers="black">3258990</td>
-<td class="gt_row gt_right" headers="hispanic">3884305</td>
-<td class="gt_row gt_right" headers="nhpi">79299</td>
-<td class="gt_row gt_right" headers="white">12755117</td>
-<td class="gt_row gt_right" headers="two_or_more">648829</td>
-<td class="gt_row gt_right" headers="unknown">1337400</td>
-<td class="gt_row gt_right" headers="nonresident">931750</td>
-<td class="gt_row gt_right" headers="Grand Total">24403361</td>
-<td class="gt_row gt_right" headers="pct_aian">-4.9066497</td>
-<td class="gt_row gt_right" headers="pct_asian">1.0325911</td>
-<td class="gt_row gt_right" headers="pct_black">-2.5610468</td>
-<td class="gt_row gt_right" headers="pct_hispanic">3.6770431</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-4.2548567</td>
-<td class="gt_row gt_right" headers="pct_white">-2.8132469</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">10.5950354</td>
-<td class="gt_row gt_right" headers="pct_unknown">-7.826352</td>
-<td class="gt_row gt_right" headers="pct_nonresident">7.7780657</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-1.2178805</td>
-</tr>
-<tr class="odd">
-<td class="gt_row gt_right" headers="year">2014</td>
-<td class="gt_row gt_right" headers="aian">175532</td>
-<td class="gt_row gt_right" headers="asian">1344670</td>
-<td class="gt_row gt_right" headers="black">3166710</td>
-<td class="gt_row gt_right" headers="hispanic">4005247</td>
-<td class="gt_row gt_right" headers="nhpi">76679</td>
-<td class="gt_row gt_right" headers="white">12400984</td>
-<td class="gt_row gt_right" headers="two_or_more">718522</td>
-<td class="gt_row gt_right" headers="unknown">1229555</td>
-<td class="gt_row gt_right" headers="nonresident">1016935</td>
-<td class="gt_row gt_right" headers="Grand Total">24134834</td>
-<td class="gt_row gt_right" headers="pct_aian">-5.4775341</td>
-<td class="gt_row gt_right" headers="pct_asian">1.7173651</td>
-<td class="gt_row gt_right" headers="pct_black">-2.8315521</td>
-<td class="gt_row gt_right" headers="pct_hispanic">3.1136072</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-3.3039509</td>
-<td class="gt_row gt_right" headers="pct_white">-2.7763995</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">10.7413510</td>
-<td class="gt_row gt_right" headers="pct_unknown">-8.063780</td>
-<td class="gt_row gt_right" headers="pct_nonresident">9.1424738</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-1.1003689</td>
-</tr>
-<tr class="even">
-<td class="gt_row gt_right" headers="year">2015</td>
-<td class="gt_row gt_right" headers="aian">168776</td>
-<td class="gt_row gt_right" headers="asian">1363155</td>
-<td class="gt_row gt_right" headers="black">3021431</td>
-<td class="gt_row gt_right" headers="hispanic">4092650</td>
-<td class="gt_row gt_right" headers="nhpi">72653</td>
-<td class="gt_row gt_right" headers="white">12068765</td>
-<td class="gt_row gt_right" headers="two_or_more">749476</td>
-<td class="gt_row gt_right" headers="unknown">1151694</td>
-<td class="gt_row gt_right" headers="nonresident">1088641</td>
-<td class="gt_row gt_right" headers="Grand Total">23777241</td>
-<td class="gt_row gt_right" headers="pct_aian">-3.8488709</td>
-<td class="gt_row gt_right" headers="pct_asian">1.3746867</td>
-<td class="gt_row gt_right" headers="pct_black">-4.5876951</td>
-<td class="gt_row gt_right" headers="pct_hispanic">2.1822125</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-5.2504597</td>
-<td class="gt_row gt_right" headers="pct_white">-2.6789729</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">4.3080101</td>
-<td class="gt_row gt_right" headers="pct_unknown">-6.332454</td>
-<td class="gt_row gt_right" headers="pct_nonresident">7.0511881</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-1.4816468</td>
-</tr>
-<tr class="odd">
-<td class="gt_row gt_right" headers="year">2016</td>
-<td class="gt_row gt_right" headers="aian">163810</td>
-<td class="gt_row gt_right" headers="asian">1392612</td>
-<td class="gt_row gt_right" headers="black">2922865</td>
-<td class="gt_row gt_right" headers="hispanic">4240377</td>
-<td class="gt_row gt_right" headers="nhpi">69955</td>
-<td class="gt_row gt_right" headers="white">11849717</td>
-<td class="gt_row gt_right" headers="two_or_more">763613</td>
-<td class="gt_row gt_right" headers="unknown">1098022</td>
-<td class="gt_row gt_right" headers="nonresident">1099196</td>
-<td class="gt_row gt_right" headers="Grand Total">23600167</td>
-<td class="gt_row gt_right" headers="pct_aian">-2.9423615</td>
-<td class="gt_row gt_right" headers="pct_asian">2.1609428</td>
-<td class="gt_row gt_right" headers="pct_black">-3.2622291</td>
-<td class="gt_row gt_right" headers="pct_hispanic">3.6095684</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-3.7135425</td>
-<td class="gt_row gt_right" headers="pct_white">-1.8149993</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">1.8862512</td>
-<td class="gt_row gt_right" headers="pct_unknown">-4.660266</td>
-<td class="gt_row gt_right" headers="pct_nonresident">0.9695575</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-0.7447206</td>
-</tr>
-<tr class="even">
-<td class="gt_row gt_right" headers="year">2017</td>
-<td class="gt_row gt_right" headers="aian">159543</td>
-<td class="gt_row gt_right" headers="asian">1420430</td>
-<td class="gt_row gt_right" headers="black">2895084</td>
-<td class="gt_row gt_right" headers="hispanic">4356102</td>
-<td class="gt_row gt_right" headers="nhpi">68897</td>
-<td class="gt_row gt_right" headers="white">11648725</td>
-<td class="gt_row gt_right" headers="two_or_more">802803</td>
-<td class="gt_row gt_right" headers="unknown">1019553</td>
-<td class="gt_row gt_right" headers="nonresident">1096662</td>
-<td class="gt_row gt_right" headers="Grand Total">23467799</td>
-<td class="gt_row gt_right" headers="pct_aian">-2.6048471</td>
-<td class="gt_row gt_right" headers="pct_asian">1.9975413</td>
-<td class="gt_row gt_right" headers="pct_black">-0.9504715</td>
-<td class="gt_row gt_right" headers="pct_hispanic">2.7291205</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-1.5124008</td>
-<td class="gt_row gt_right" headers="pct_white">-1.6961755</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">5.1321808</td>
-<td class="gt_row gt_right" headers="pct_unknown">-7.146396</td>
-<td class="gt_row gt_right" headers="pct_nonresident">-0.2305321</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-0.5608774</td>
-</tr>
-<tr class="odd">
-<td class="gt_row gt_right" headers="year">2018</td>
-<td class="gt_row gt_right" headers="aian">154648</td>
-<td class="gt_row gt_right" headers="asian">1455177</td>
-<td class="gt_row gt_right" headers="black">2829912</td>
-<td class="gt_row gt_right" headers="hispanic">4441476</td>
-<td class="gt_row gt_right" headers="nhpi">67271</td>
-<td class="gt_row gt_right" headers="white">11441695</td>
-<td class="gt_row gt_right" headers="two_or_more">836098</td>
-<td class="gt_row gt_right" headers="unknown">1014748</td>
-<td class="gt_row gt_right" headers="nonresident">1088231</td>
-<td class="gt_row gt_right" headers="Grand Total">23329256</td>
-<td class="gt_row gt_right" headers="pct_aian">-3.0681384</td>
-<td class="gt_row gt_right" headers="pct_asian">2.4462311</td>
-<td class="gt_row gt_right" headers="pct_black">-2.2511264</td>
-<td class="gt_row gt_right" headers="pct_hispanic">1.9598715</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-2.3600447</td>
-<td class="gt_row gt_right" headers="pct_white">-1.7772761</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">4.1473437</td>
-<td class="gt_row gt_right" headers="pct_unknown">-0.471285</td>
-<td class="gt_row gt_right" headers="pct_nonresident">-0.7687875</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-0.5903536</td>
-</tr>
-<tr class="even">
-<td class="gt_row gt_right" headers="year">2019</td>
-<td class="gt_row gt_right" headers="aian">150302</td>
-<td class="gt_row gt_right" headers="asian">1475712</td>
-<td class="gt_row gt_right" headers="black">2809138</td>
-<td class="gt_row gt_right" headers="hispanic">4571656</td>
-<td class="gt_row gt_right" headers="nhpi">66859</td>
-<td class="gt_row gt_right" headers="white">11242762</td>
-<td class="gt_row gt_right" headers="two_or_more">863964</td>
-<td class="gt_row gt_right" headers="unknown">1035112</td>
-<td class="gt_row gt_right" headers="nonresident">1068267</td>
-<td class="gt_row gt_right" headers="Grand Total">23283772</td>
-<td class="gt_row gt_right" headers="pct_aian">-2.8102530</td>
-<td class="gt_row gt_right" headers="pct_asian">1.4111685</td>
-<td class="gt_row gt_right" headers="pct_black">-0.7340864</td>
-<td class="gt_row gt_right" headers="pct_hispanic">2.9310076</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-0.6124482</td>
-<td class="gt_row gt_right" headers="pct_white">-1.7386672</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">3.3328629</td>
-<td class="gt_row gt_right" headers="pct_unknown">2.006804</td>
-<td class="gt_row gt_right" headers="pct_nonresident">-1.8345370</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-0.1949655</td>
-</tr>
-<tr class="odd">
-<td class="gt_row gt_right" headers="year">2020</td>
-<td class="gt_row gt_right" headers="aian">138989</td>
-<td class="gt_row gt_right" headers="asian">1489433</td>
-<td class="gt_row gt_right" headers="black">2681562</td>
-<td class="gt_row gt_right" headers="hispanic">4416043</td>
-<td class="gt_row gt_right" headers="nhpi">64093</td>
-<td class="gt_row gt_right" headers="white">10816333</td>
-<td class="gt_row gt_right" headers="two_or_more">865338</td>
-<td class="gt_row gt_right" headers="unknown">1010838</td>
-<td class="gt_row gt_right" headers="nonresident">915632</td>
-<td class="gt_row gt_right" headers="Grand Total">22398261</td>
-<td class="gt_row gt_right" headers="pct_aian">-7.5268460</td>
-<td class="gt_row gt_right" headers="pct_asian">0.9297885</td>
-<td class="gt_row gt_right" headers="pct_black">-4.5414643</td>
-<td class="gt_row gt_right" headers="pct_hispanic">-3.4038650</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-4.1370646</td>
-<td class="gt_row gt_right" headers="pct_white">-3.7929203</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">0.1590344</td>
-<td class="gt_row gt_right" headers="pct_unknown">-2.345060</td>
-<td class="gt_row gt_right" headers="pct_nonresident">-14.2880946</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-3.8031252</td>
-</tr>
-<tr class="even">
-<td class="gt_row gt_right" headers="year">2021</td>
-<td class="gt_row gt_right" headers="aian">139594</td>
-<td class="gt_row gt_right" headers="asian">1507628</td>
-<td class="gt_row gt_right" headers="black">2637304</td>
-<td class="gt_row gt_right" headers="hispanic">4398341</td>
-<td class="gt_row gt_right" headers="nhpi">62814</td>
-<td class="gt_row gt_right" headers="white">10520971</td>
-<td class="gt_row gt_right" headers="two_or_more">864255</td>
-<td class="gt_row gt_right" headers="unknown">1050987</td>
-<td class="gt_row gt_right" headers="nonresident">970952</td>
-<td class="gt_row gt_right" headers="Grand Total">22152846</td>
-<td class="gt_row gt_right" headers="pct_aian">0.4352862</td>
-<td class="gt_row gt_right" headers="pct_asian">1.2216058</td>
-<td class="gt_row gt_right" headers="pct_black">-1.6504560</td>
-<td class="gt_row gt_right" headers="pct_hispanic">-0.4008566</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-1.9955377</td>
-<td class="gt_row gt_right" headers="pct_white">-2.7307036</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">-0.1251534</td>
-<td class="gt_row gt_right" headers="pct_unknown">3.971853</td>
-<td class="gt_row gt_right" headers="pct_nonresident">6.0417286</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-1.0956877</td>
-</tr>
-<tr class="odd">
-<td class="gt_row gt_right" headers="year">2022</td>
-<td class="gt_row gt_right" headers="aian">141619</td>
-<td class="gt_row gt_right" headers="asian">1533566</td>
-<td class="gt_row gt_right" headers="black">2648363</td>
-<td class="gt_row gt_right" headers="hispanic">4566218</td>
-<td class="gt_row gt_right" headers="nhpi">59991</td>
-<td class="gt_row gt_right" headers="white">10239200</td>
-<td class="gt_row gt_right" headers="two_or_more">874623</td>
-<td class="gt_row gt_right" headers="unknown">990190</td>
-<td class="gt_row gt_right" headers="nonresident">1060082</td>
-<td class="gt_row gt_right" headers="Grand Total">22113852</td>
-<td class="gt_row gt_right" headers="pct_aian">1.4506354</td>
-<td class="gt_row gt_right" headers="pct_asian">1.7204509</td>
-<td class="gt_row gt_right" headers="pct_black">0.4193297</td>
-<td class="gt_row gt_right" headers="pct_hispanic">3.8168255</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-4.4942210</td>
-<td class="gt_row gt_right" headers="pct_white">-2.6781844</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">1.1996459</td>
-<td class="gt_row gt_right" headers="pct_unknown">-5.784753</td>
-<td class="gt_row gt_right" headers="pct_nonresident">9.1796505</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-0.1760225</td>
-</tr>
-<tr class="even">
-<td class="gt_row gt_right" headers="year">2023</td>
-<td class="gt_row gt_right" headers="aian">146428</td>
-<td class="gt_row gt_right" headers="asian">1581312</td>
-<td class="gt_row gt_right" headers="black">2766254</td>
-<td class="gt_row gt_right" headers="hispanic">4833815</td>
-<td class="gt_row gt_right" headers="nhpi">58855</td>
-<td class="gt_row gt_right" headers="white">10262591</td>
-<td class="gt_row gt_right" headers="two_or_more">927866</td>
-<td class="gt_row gt_right" headers="unknown">1018064</td>
-<td class="gt_row gt_right" headers="nonresident">1111970</td>
-<td class="gt_row gt_right" headers="Grand Total">22707155</td>
-<td class="gt_row gt_right" headers="pct_aian">3.3957308</td>
-<td class="gt_row gt_right" headers="pct_asian">3.1133971</td>
-<td class="gt_row gt_right" headers="pct_black">4.4514668</td>
-<td class="gt_row gt_right" headers="pct_hispanic">5.8603641</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-1.8936174</td>
-<td class="gt_row gt_right" headers="pct_white">0.2284456</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">6.0875371</td>
-<td class="gt_row gt_right" headers="pct_unknown">2.815015</td>
-<td class="gt_row gt_right" headers="pct_nonresident">4.8947157</td>
-<td class="gt_row gt_right" headers="pct_grand_total">2.6829473</td>
-</tr>
-<tr class="odd">
-<td class="gt_row gt_right" headers="year">2024</td>
-<td class="gt_row gt_right" headers="aian">150155</td>
-<td class="gt_row gt_right" headers="asian">1636368</td>
-<td class="gt_row gt_right" headers="black">2927705</td>
-<td class="gt_row gt_right" headers="hispanic">5129784</td>
-<td class="gt_row gt_right" headers="nhpi">58662</td>
-<td class="gt_row gt_right" headers="white">10301502</td>
-<td class="gt_row gt_right" headers="two_or_more">985163</td>
-<td class="gt_row gt_right" headers="unknown">1126957</td>
-<td class="gt_row gt_right" headers="nonresident">1150178</td>
-<td class="gt_row gt_right" headers="Grand Total">23466474</td>
-<td class="gt_row gt_right" headers="pct_aian">2.5452782</td>
-<td class="gt_row gt_right" headers="pct_asian">3.4816659</td>
-<td class="gt_row gt_right" headers="pct_black">5.8364489</td>
-<td class="gt_row gt_right" headers="pct_hispanic">6.1228864</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-0.3279246</td>
-<td class="gt_row gt_right" headers="pct_white">0.3791538</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">6.1751374</td>
-<td class="gt_row gt_right" headers="pct_unknown">10.696086</td>
-<td class="gt_row gt_right" headers="pct_nonresident">3.4360639</td>
-<td class="gt_row gt_right" headers="pct_grand_total">3.3439636</td>
-</tr>
-</tbody>
-</table>
-
-</div>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co">#' Formatting</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>format_gt_table <span class="ot">&lt;-</span> <span class="cf">function</span>(gt_table, title_text) {</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  gt_table <span class="sc">|&gt;</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt_number</span>(</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>      <span class="at">columns =</span> <span class="fu">c</span>(</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>        aian, asian, black, hispanic, nhpi, white,</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>        two_or_more, unknown, nonresident, <span class="st">`</span><span class="at">Grand Total</span><span class="st">`</span></span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>      ),</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>      <span class="at">decimals =</span> <span class="dv">0</span></span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt_percent</span>(</span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">columns =</span> <span class="fu">starts_with</span>(<span class="st">"pct_"</span>),</span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">decimals =</span> <span class="dv">1</span>,</span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">scale_values =</span> <span class="cn">FALSE</span></span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">fmt_missing</span>(</span>
-<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>      <span class="at">columns =</span> <span class="fu">everything</span>(),</span>
-<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>      <span class="at">missing_text =</span> <span class="st">"-"</span></span>
-<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tab_header</span>(</span>
-<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="fu">md</span>(<span class="fu">glue</span>(<span class="st">"**{title_text}**"</span>))</span>
-<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tab_style</span>(</span>
-<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">style =</span> <span class="fu">cell_text</span>(<span class="at">weight =</span> <span class="st">"bold"</span>),</span>
-<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">locations =</span> <span class="fu">cells_column_labels</span>(<span class="fu">everything</span>())</span>
-<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a><span class="co">#' View national table with formatting</span></span>
-<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a>IPEDS_yearly_pct <span class="sc">|&gt;</span></span>
-<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt</span>() <span class="sc">|&gt;</span></span>
-<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">format_gt_table</span>(<span class="st">"National enrollment YoY trends"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Since gt v0.6.0 `fmt_missing()` is deprecated and will soon be removed.
-ℹ Use `sub_missing()` instead.
-This warning is displayed once every 8 hours.</code></pre>
-</div>
-<div class="cell-output-display">
-<div id="xuwrbhqine" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#xuwrbhqine table {
-  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-#xuwrbhqine thead, #xuwrbhqine tbody, #xuwrbhqine tfoot, #xuwrbhqine tr, #xuwrbhqine td, #xuwrbhqine th {
-  border-style: none;
-}
-
-#xuwrbhqine p {
-  margin: 0;
-  padding: 0;
-}
-
-#xuwrbhqine .gt_table {
-  display: table;
-  border-collapse: collapse;
-  line-height: normal;
-  margin-left: auto;
-  margin-right: auto;
-  color: #333333;
-  font-size: 16px;
-  font-weight: normal;
-  font-style: normal;
-  background-color: #FFFFFF;
-  width: auto;
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #A8A8A8;
-  border-right-style: none;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #A8A8A8;
-  border-left-style: none;
-  border-left-width: 2px;
-  border-left-color: #D3D3D3;
-}
-
-#xuwrbhqine .gt_caption {
-  padding-top: 4px;
-  padding-bottom: 4px;
-}
-
-#xuwrbhqine .gt_title {
-  color: #333333;
-  font-size: 125%;
-  font-weight: initial;
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-bottom-color: #FFFFFF;
-  border-bottom-width: 0;
-}
-
-#xuwrbhqine .gt_subtitle {
-  color: #333333;
-  font-size: 85%;
-  font-weight: initial;
-  padding-top: 3px;
-  padding-bottom: 5px;
-  padding-left: 5px;
-  padding-right: 5px;
-  border-top-color: #FFFFFF;
-  border-top-width: 0;
-}
-
-#xuwrbhqine .gt_heading {
-  background-color: #FFFFFF;
-  text-align: center;
-  border-bottom-color: #FFFFFF;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-}
-
-#xuwrbhqine .gt_bottom_border {
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-}
-
-#xuwrbhqine .gt_col_headings {
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-}
-
-#xuwrbhqine .gt_col_heading {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: normal;
-  text-transform: inherit;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-  vertical-align: bottom;
-  padding-top: 5px;
-  padding-bottom: 6px;
-  padding-left: 5px;
-  padding-right: 5px;
-  overflow-x: hidden;
-}
-
-#xuwrbhqine .gt_column_spanner_outer {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: normal;
-  text-transform: inherit;
-  padding-top: 0;
-  padding-bottom: 0;
-  padding-left: 4px;
-  padding-right: 4px;
-}
-
-#xuwrbhqine .gt_column_spanner_outer:first-child {
-  padding-left: 0;
-}
-
-#xuwrbhqine .gt_column_spanner_outer:last-child {
-  padding-right: 0;
-}
-
-#xuwrbhqine .gt_column_spanner {
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  vertical-align: bottom;
-  padding-top: 5px;
-  padding-bottom: 5px;
-  overflow-x: hidden;
-  display: inline-block;
-  width: 100%;
-}
-
-#xuwrbhqine .gt_spanner_row {
-  border-bottom-style: hidden;
-}
-
-#xuwrbhqine .gt_group_heading {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  text-transform: inherit;
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-  vertical-align: middle;
-  text-align: left;
-}
-
-#xuwrbhqine .gt_empty_group_heading {
-  padding: 0.5px;
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  border-top-style: solid;
-  border-top-width: 2px;
-  border-top-color: #D3D3D3;
-  border-bottom-style: solid;
-  border-bottom-width: 2px;
-  border-bottom-color: #D3D3D3;
-  vertical-align: middle;
-}
-
-#xuwrbhqine .gt_from_md > :first-child {
-  margin-top: 0;
-}
-
-#xuwrbhqine .gt_from_md > :last-child {
-  margin-bottom: 0;
-}
-
-#xuwrbhqine .gt_row {
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 5px;
-  padding-right: 5px;
-  margin: 10px;
-  border-top-style: solid;
-  border-top-width: 1px;
-  border-top-color: #D3D3D3;
-  border-left-style: none;
-  border-left-width: 1px;
-  border-left-color: #D3D3D3;
-  border-right-style: none;
-  border-right-width: 1px;
-  border-right-color: #D3D3D3;
-  vertical-align: middle;
-  overflow-x: hidden;
-}
-
-#xuwrbhqine .gt_stub {
-  color: #333333;
-  background-color: #FFFFFF;
-  font-size: 100%;
-  font-weight: initial;
-  text-transform: inherit;
-  border-right-style: solid;
-  border-right-width: 2px;
-  border-right-color: #D3D3D3;
-  padding-left: 5px;
-  padding-right: 5px;
-}
-
-#xuwrbhqine .gt_stub_row_group {
+#hexdbvhvnm .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1608,15 +374,15 @@ This warning is displayed once every 8 hours.</code></pre>
   vertical-align: top;
 }
 
-#xuwrbhqine .gt_row_group_first td {
+#hexdbvhvnm .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#xuwrbhqine .gt_row_group_first th {
+#hexdbvhvnm .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#xuwrbhqine .gt_summary_row {
+#hexdbvhvnm .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1626,16 +392,16 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#xuwrbhqine .gt_first_summary_row {
+#hexdbvhvnm .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#xuwrbhqine .gt_first_summary_row.thick {
+#hexdbvhvnm .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#xuwrbhqine .gt_last_summary_row {
+#hexdbvhvnm .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1645,7 +411,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#xuwrbhqine .gt_grand_summary_row {
+#hexdbvhvnm .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1655,7 +421,7 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#xuwrbhqine .gt_first_grand_summary_row {
+#hexdbvhvnm .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1665,7 +431,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#xuwrbhqine .gt_last_grand_summary_row_top {
+#hexdbvhvnm .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1675,11 +441,11 @@ This warning is displayed once every 8 hours.</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#xuwrbhqine .gt_striped {
+#hexdbvhvnm .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#xuwrbhqine .gt_table_body {
+#hexdbvhvnm .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1688,7 +454,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#xuwrbhqine .gt_footnotes {
+#hexdbvhvnm .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1702,7 +468,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#xuwrbhqine .gt_footnote {
+#hexdbvhvnm .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1711,7 +477,7 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#xuwrbhqine .gt_sourcenotes {
+#hexdbvhvnm .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1725,7 +491,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#xuwrbhqine .gt_sourcenote {
+#hexdbvhvnm .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1733,72 +499,72 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#xuwrbhqine .gt_left {
+#hexdbvhvnm .gt_left {
   text-align: left;
 }
 
-#xuwrbhqine .gt_center {
+#hexdbvhvnm .gt_center {
   text-align: center;
 }
 
-#xuwrbhqine .gt_right {
+#hexdbvhvnm .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#xuwrbhqine .gt_font_normal {
+#hexdbvhvnm .gt_font_normal {
   font-weight: normal;
 }
 
-#xuwrbhqine .gt_font_bold {
+#hexdbvhvnm .gt_font_bold {
   font-weight: bold;
 }
 
-#xuwrbhqine .gt_font_italic {
+#hexdbvhvnm .gt_font_italic {
   font-style: italic;
 }
 
-#xuwrbhqine .gt_super {
+#hexdbvhvnm .gt_super {
   font-size: 65%;
 }
 
-#xuwrbhqine .gt_footnote_marks {
+#hexdbvhvnm .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#xuwrbhqine .gt_asterisk {
+#hexdbvhvnm .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#xuwrbhqine .gt_indent_1 {
+#hexdbvhvnm .gt_indent_1 {
   text-indent: 5px;
 }
 
-#xuwrbhqine .gt_indent_2 {
+#hexdbvhvnm .gt_indent_2 {
   text-indent: 10px;
 }
 
-#xuwrbhqine .gt_indent_3 {
+#hexdbvhvnm .gt_indent_3 {
   text-indent: 15px;
 }
 
-#xuwrbhqine .gt_indent_4 {
+#hexdbvhvnm .gt_indent_4 {
   text-indent: 20px;
 }
 
-#xuwrbhqine .gt_indent_5 {
+#hexdbvhvnm .gt_indent_5 {
   text-indent: 25px;
 }
 
-#xuwrbhqine .katex-display {
+#hexdbvhvnm .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#xuwrbhqine div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#hexdbvhvnm div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -2183,28 +949,29 @@ This warning is displayed once every 8 hours.</code></pre>
 
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co">#' View loyola table with formatting</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>Loyola_yearly_pct <span class="sc">|&gt;</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gt</span>() <span class="sc">|&gt;</span></span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tab_header</span>(<span class="at">title =</span> <span class="st">"Loyola Maryland enrollment YoY trends"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="loyola-maryland-enrollment-yoy-trends" class="level1">
+<h1>## Loyola Maryland Enrollment YoY Trends</h1>
+<div class="cell">
 <div class="cell-output-display">
-<div id="htjzxhssag" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#htjzxhssag table {
+<div id="gikmuyfcfv" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#gikmuyfcfv table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#htjzxhssag thead, #htjzxhssag tbody, #htjzxhssag tfoot, #htjzxhssag tr, #htjzxhssag td, #htjzxhssag th {
+#gikmuyfcfv thead, #gikmuyfcfv tbody, #gikmuyfcfv tfoot, #gikmuyfcfv tr, #gikmuyfcfv td, #gikmuyfcfv th {
   border-style: none;
 }
 
-#htjzxhssag p {
+#gikmuyfcfv p {
   margin: 0;
   padding: 0;
 }
 
-#htjzxhssag .gt_table {
+#gikmuyfcfv .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -2230,12 +997,12 @@ This warning is displayed once every 8 hours.</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#htjzxhssag .gt_caption {
+#gikmuyfcfv .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#htjzxhssag .gt_title {
+#gikmuyfcfv .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -2247,7 +1014,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-bottom-width: 0;
 }
 
-#htjzxhssag .gt_subtitle {
+#gikmuyfcfv .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -2259,7 +1026,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-top-width: 0;
 }
 
-#htjzxhssag .gt_heading {
+#gikmuyfcfv .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -2271,13 +1038,13 @@ This warning is displayed once every 8 hours.</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#htjzxhssag .gt_bottom_border {
+#gikmuyfcfv .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#htjzxhssag .gt_col_headings {
+#gikmuyfcfv .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2292,7 +1059,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#htjzxhssag .gt_col_heading {
+#gikmuyfcfv .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2312,7 +1079,7 @@ This warning is displayed once every 8 hours.</code></pre>
   overflow-x: hidden;
 }
 
-#htjzxhssag .gt_column_spanner_outer {
+#gikmuyfcfv .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2324,15 +1091,15 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 4px;
 }
 
-#htjzxhssag .gt_column_spanner_outer:first-child {
+#gikmuyfcfv .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#htjzxhssag .gt_column_spanner_outer:last-child {
+#gikmuyfcfv .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#htjzxhssag .gt_column_spanner {
+#gikmuyfcfv .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -2344,11 +1111,11 @@ This warning is displayed once every 8 hours.</code></pre>
   width: 100%;
 }
 
-#htjzxhssag .gt_spanner_row {
+#gikmuyfcfv .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#htjzxhssag .gt_group_heading {
+#gikmuyfcfv .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2374,7 +1141,7 @@ This warning is displayed once every 8 hours.</code></pre>
   text-align: left;
 }
 
-#htjzxhssag .gt_empty_group_heading {
+#gikmuyfcfv .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -2389,15 +1156,15 @@ This warning is displayed once every 8 hours.</code></pre>
   vertical-align: middle;
 }
 
-#htjzxhssag .gt_from_md > :first-child {
+#gikmuyfcfv .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#htjzxhssag .gt_from_md > :last-child {
+#gikmuyfcfv .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#htjzxhssag .gt_row {
+#gikmuyfcfv .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2416,7 +1183,7 @@ This warning is displayed once every 8 hours.</code></pre>
   overflow-x: hidden;
 }
 
-#htjzxhssag .gt_stub {
+#gikmuyfcfv .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2429,7 +1196,7 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#htjzxhssag .gt_stub_row_group {
+#gikmuyfcfv .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -2443,15 +1210,15 @@ This warning is displayed once every 8 hours.</code></pre>
   vertical-align: top;
 }
 
-#htjzxhssag .gt_row_group_first td {
+#gikmuyfcfv .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#htjzxhssag .gt_row_group_first th {
+#gikmuyfcfv .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#htjzxhssag .gt_summary_row {
+#gikmuyfcfv .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2461,16 +1228,16 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#htjzxhssag .gt_first_summary_row {
+#gikmuyfcfv .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#htjzxhssag .gt_first_summary_row.thick {
+#gikmuyfcfv .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#htjzxhssag .gt_last_summary_row {
+#gikmuyfcfv .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2480,7 +1247,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#htjzxhssag .gt_grand_summary_row {
+#gikmuyfcfv .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -2490,7 +1257,7 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#htjzxhssag .gt_first_grand_summary_row {
+#gikmuyfcfv .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2500,7 +1267,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#htjzxhssag .gt_last_grand_summary_row_top {
+#gikmuyfcfv .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -2510,11 +1277,11 @@ This warning is displayed once every 8 hours.</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#htjzxhssag .gt_striped {
+#gikmuyfcfv .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#htjzxhssag .gt_table_body {
+#gikmuyfcfv .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -2523,7 +1290,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#htjzxhssag .gt_footnotes {
+#gikmuyfcfv .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2537,7 +1304,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#htjzxhssag .gt_footnote {
+#gikmuyfcfv .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -2546,7 +1313,7 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#htjzxhssag .gt_sourcenotes {
+#gikmuyfcfv .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -2560,7 +1327,7 @@ This warning is displayed once every 8 hours.</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#htjzxhssag .gt_sourcenote {
+#gikmuyfcfv .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -2568,72 +1335,72 @@ This warning is displayed once every 8 hours.</code></pre>
   padding-right: 5px;
 }
 
-#htjzxhssag .gt_left {
+#gikmuyfcfv .gt_left {
   text-align: left;
 }
 
-#htjzxhssag .gt_center {
+#gikmuyfcfv .gt_center {
   text-align: center;
 }
 
-#htjzxhssag .gt_right {
+#gikmuyfcfv .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#htjzxhssag .gt_font_normal {
+#gikmuyfcfv .gt_font_normal {
   font-weight: normal;
 }
 
-#htjzxhssag .gt_font_bold {
+#gikmuyfcfv .gt_font_bold {
   font-weight: bold;
 }
 
-#htjzxhssag .gt_font_italic {
+#gikmuyfcfv .gt_font_italic {
   font-style: italic;
 }
 
-#htjzxhssag .gt_super {
+#gikmuyfcfv .gt_super {
   font-size: 65%;
 }
 
-#htjzxhssag .gt_footnote_marks {
+#gikmuyfcfv .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#htjzxhssag .gt_asterisk {
+#gikmuyfcfv .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#htjzxhssag .gt_indent_1 {
+#gikmuyfcfv .gt_indent_1 {
   text-indent: 5px;
 }
 
-#htjzxhssag .gt_indent_2 {
+#gikmuyfcfv .gt_indent_2 {
   text-indent: 10px;
 }
 
-#htjzxhssag .gt_indent_3 {
+#gikmuyfcfv .gt_indent_3 {
   text-indent: 15px;
 }
 
-#htjzxhssag .gt_indent_4 {
+#gikmuyfcfv .gt_indent_4 {
   text-indent: 20px;
 }
 
-#htjzxhssag .gt_indent_5 {
+#gikmuyfcfv .gt_indent_5 {
   text-indent: 25px;
 }
 
-#htjzxhssag .katex-display {
+#gikmuyfcfv .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#htjzxhssag div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#gikmuyfcfv div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -2641,30 +1408,30 @@ This warning is displayed once every 8 hours.</code></pre>
 <table class="gt_table caption-top table table-sm table-striped small" data-quarto-bootstrap="false">
 <thead>
 <tr class="gt_heading header">
-<td colspan="21" class="gt_heading gt_title gt_font_normal gt_bottom_border">Loyola Maryland enrollment YoY trends</td>
+<td colspan="21" class="gt_heading gt_title gt_font_normal gt_bottom_border"><strong>Loyola Maryland enrollment YoY trends</strong></td>
 </tr>
 <tr class="gt_col_headings even">
-<th id="year" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">year</th>
-<th id="aian" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">aian</th>
-<th id="asian" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">asian</th>
-<th id="black" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">black</th>
-<th id="hispanic" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">hispanic</th>
-<th id="nhpi" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">nhpi</th>
-<th id="white" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">white</th>
-<th id="two_or_more" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">two_or_more</th>
-<th id="unknown" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">unknown</th>
-<th id="nonresident" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">nonresident</th>
-<th id="Grand-Total" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Grand Total</th>
-<th id="pct_aian" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_aian</th>
-<th id="pct_asian" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_asian</th>
-<th id="pct_black" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_black</th>
-<th id="pct_hispanic" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_hispanic</th>
-<th id="pct_nhpi" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_nhpi</th>
-<th id="pct_white" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_white</th>
-<th id="pct_two_or_more" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_two_or_more</th>
-<th id="pct_unknown" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_unknown</th>
-<th id="pct_nonresident" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_nonresident</th>
-<th id="pct_grand_total" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">pct_grand_total</th>
+<th id="year" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">year</th>
+<th id="aian" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">aian</th>
+<th id="asian" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">asian</th>
+<th id="black" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">black</th>
+<th id="hispanic" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">hispanic</th>
+<th id="nhpi" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">nhpi</th>
+<th id="white" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">white</th>
+<th id="two_or_more" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">two_or_more</th>
+<th id="unknown" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">unknown</th>
+<th id="nonresident" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">nonresident</th>
+<th id="Grand-Total" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">Grand Total</th>
+<th id="pct_aian" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">pct_aian</th>
+<th id="pct_asian" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">pct_asian</th>
+<th id="pct_black" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">pct_black</th>
+<th id="pct_hispanic" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">pct_hispanic</th>
+<th id="pct_nhpi" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">pct_nhpi</th>
+<th id="pct_white" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">pct_white</th>
+<th id="pct_two_or_more" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">pct_two_or_more</th>
+<th id="pct_unknown" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">pct_unknown</th>
+<th id="pct_nonresident" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">pct_nonresident</th>
+<th id="pct_grand_total" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" style="font-weight: bold" scope="col">pct_grand_total</th>
 </tr>
 </thead>
 <tbody class="gt_table_body">
@@ -2675,21 +1442,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">453</td>
 <td class="gt_row gt_right" headers="hispanic">431</td>
 <td class="gt_row gt_right" headers="nhpi">5</td>
-<td class="gt_row gt_right" headers="white">5614</td>
+<td class="gt_row gt_right" headers="white">5,614</td>
 <td class="gt_row gt_right" headers="two_or_more">163</td>
 <td class="gt_row gt_right" headers="unknown">162</td>
 <td class="gt_row gt_right" headers="nonresident">85</td>
-<td class="gt_row gt_right" headers="Grand Total">7151</td>
-<td class="gt_row gt_right" headers="pct_aian">NA</td>
-<td class="gt_row gt_right" headers="pct_asian">NA</td>
-<td class="gt_row gt_right" headers="pct_black">NA</td>
-<td class="gt_row gt_right" headers="pct_hispanic">NA</td>
-<td class="gt_row gt_right" headers="pct_nhpi">NA</td>
-<td class="gt_row gt_right" headers="pct_white">NA</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">NA</td>
-<td class="gt_row gt_right" headers="pct_unknown">NA</td>
-<td class="gt_row gt_right" headers="pct_nonresident">NA</td>
-<td class="gt_row gt_right" headers="pct_grand_total">NA</td>
+<td class="gt_row gt_right" headers="Grand Total">7,151</td>
+<td class="gt_row gt_right" headers="pct_aian">-</td>
+<td class="gt_row gt_right" headers="pct_asian">-</td>
+<td class="gt_row gt_right" headers="pct_black">-</td>
+<td class="gt_row gt_right" headers="pct_hispanic">-</td>
+<td class="gt_row gt_right" headers="pct_nhpi">-</td>
+<td class="gt_row gt_right" headers="pct_white">-</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">-</td>
+<td class="gt_row gt_right" headers="pct_unknown">-</td>
+<td class="gt_row gt_right" headers="pct_nonresident">-</td>
+<td class="gt_row gt_right" headers="pct_grand_total">-</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_right" headers="year">2012</td>
@@ -2698,21 +1465,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">503</td>
 <td class="gt_row gt_right" headers="hispanic">518</td>
 <td class="gt_row gt_right" headers="nhpi">4</td>
-<td class="gt_row gt_right" headers="white">5508</td>
+<td class="gt_row gt_right" headers="white">5,508</td>
 <td class="gt_row gt_right" headers="two_or_more">105</td>
 <td class="gt_row gt_right" headers="unknown">110</td>
 <td class="gt_row gt_right" headers="nonresident">66</td>
-<td class="gt_row gt_right" headers="Grand Total">7050</td>
-<td class="gt_row gt_right" headers="pct_aian">50.00000</td>
-<td class="gt_row gt_right" headers="pct_asian">-3.5398230</td>
-<td class="gt_row gt_right" headers="pct_black">11.0375276</td>
-<td class="gt_row gt_right" headers="pct_hispanic">20.185615</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-20.00000</td>
-<td class="gt_row gt_right" headers="pct_white">-1.8881368</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">-35.582822</td>
-<td class="gt_row gt_right" headers="pct_unknown">-32.098765</td>
-<td class="gt_row gt_right" headers="pct_nonresident">-22.352941</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-1.4123899</td>
+<td class="gt_row gt_right" headers="Grand Total">7,050</td>
+<td class="gt_row gt_right" headers="pct_aian">50.0%</td>
+<td class="gt_row gt_right" headers="pct_asian">−3.5%</td>
+<td class="gt_row gt_right" headers="pct_black">11.0%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">20.2%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">−20.0%</td>
+<td class="gt_row gt_right" headers="pct_white">−1.9%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">−35.6%</td>
+<td class="gt_row gt_right" headers="pct_unknown">−32.1%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">−22.4%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">−1.4%</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_right" headers="year">2013</td>
@@ -2721,21 +1488,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">533</td>
 <td class="gt_row gt_right" headers="hispanic">560</td>
 <td class="gt_row gt_right" headers="nhpi">6</td>
-<td class="gt_row gt_right" headers="white">5483</td>
+<td class="gt_row gt_right" headers="white">5,483</td>
 <td class="gt_row gt_right" headers="two_or_more">146</td>
 <td class="gt_row gt_right" headers="unknown">68</td>
 <td class="gt_row gt_right" headers="nonresident">48</td>
-<td class="gt_row gt_right" headers="Grand Total">7073</td>
-<td class="gt_row gt_right" headers="pct_aian">-44.44444</td>
-<td class="gt_row gt_right" headers="pct_asian">0.4587156</td>
-<td class="gt_row gt_right" headers="pct_black">5.9642147</td>
-<td class="gt_row gt_right" headers="pct_hispanic">8.108108</td>
-<td class="gt_row gt_right" headers="pct_nhpi">50.00000</td>
-<td class="gt_row gt_right" headers="pct_white">-0.4538853</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">39.047619</td>
-<td class="gt_row gt_right" headers="pct_unknown">-38.181818</td>
-<td class="gt_row gt_right" headers="pct_nonresident">-27.272727</td>
-<td class="gt_row gt_right" headers="pct_grand_total">0.3262411</td>
+<td class="gt_row gt_right" headers="Grand Total">7,073</td>
+<td class="gt_row gt_right" headers="pct_aian">−44.4%</td>
+<td class="gt_row gt_right" headers="pct_asian">0.5%</td>
+<td class="gt_row gt_right" headers="pct_black">6.0%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">8.1%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">50.0%</td>
+<td class="gt_row gt_right" headers="pct_white">−0.5%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">39.0%</td>
+<td class="gt_row gt_right" headers="pct_unknown">−38.2%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">−27.3%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">0.3%</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_right" headers="year">2014</td>
@@ -2744,21 +1511,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">513</td>
 <td class="gt_row gt_right" headers="hispanic">566</td>
 <td class="gt_row gt_right" headers="nhpi">7</td>
-<td class="gt_row gt_right" headers="white">5483</td>
+<td class="gt_row gt_right" headers="white">5,483</td>
 <td class="gt_row gt_right" headers="two_or_more">169</td>
 <td class="gt_row gt_right" headers="unknown">66</td>
 <td class="gt_row gt_right" headers="nonresident">58</td>
-<td class="gt_row gt_right" headers="Grand Total">7104</td>
-<td class="gt_row gt_right" headers="pct_aian">30.00000</td>
-<td class="gt_row gt_right" headers="pct_asian">4.5662100</td>
-<td class="gt_row gt_right" headers="pct_black">-3.7523452</td>
-<td class="gt_row gt_right" headers="pct_hispanic">1.071429</td>
-<td class="gt_row gt_right" headers="pct_nhpi">16.66667</td>
-<td class="gt_row gt_right" headers="pct_white">0.0000000</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">15.753425</td>
-<td class="gt_row gt_right" headers="pct_unknown">-2.941176</td>
-<td class="gt_row gt_right" headers="pct_nonresident">20.833333</td>
-<td class="gt_row gt_right" headers="pct_grand_total">0.4382864</td>
+<td class="gt_row gt_right" headers="Grand Total">7,104</td>
+<td class="gt_row gt_right" headers="pct_aian">30.0%</td>
+<td class="gt_row gt_right" headers="pct_asian">4.6%</td>
+<td class="gt_row gt_right" headers="pct_black">−3.8%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">1.1%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">16.7%</td>
+<td class="gt_row gt_right" headers="pct_white">0.0%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">15.8%</td>
+<td class="gt_row gt_right" headers="pct_unknown">−2.9%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">20.8%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">0.4%</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_right" headers="year">2015</td>
@@ -2767,21 +1534,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">635</td>
 <td class="gt_row gt_right" headers="hispanic">596</td>
 <td class="gt_row gt_right" headers="nhpi">13</td>
-<td class="gt_row gt_right" headers="white">5259</td>
+<td class="gt_row gt_right" headers="white">5,259</td>
 <td class="gt_row gt_right" headers="two_or_more">187</td>
 <td class="gt_row gt_right" headers="unknown">56</td>
 <td class="gt_row gt_right" headers="nonresident">65</td>
-<td class="gt_row gt_right" headers="Grand Total">7083</td>
-<td class="gt_row gt_right" headers="pct_aian">-23.07692</td>
-<td class="gt_row gt_right" headers="pct_asian">14.4104803</td>
-<td class="gt_row gt_right" headers="pct_black">23.7816764</td>
-<td class="gt_row gt_right" headers="pct_hispanic">5.300353</td>
-<td class="gt_row gt_right" headers="pct_nhpi">85.71429</td>
-<td class="gt_row gt_right" headers="pct_white">-4.0853547</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">10.650888</td>
-<td class="gt_row gt_right" headers="pct_unknown">-15.151515</td>
-<td class="gt_row gt_right" headers="pct_nonresident">12.068966</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-0.2956081</td>
+<td class="gt_row gt_right" headers="Grand Total">7,083</td>
+<td class="gt_row gt_right" headers="pct_aian">−23.1%</td>
+<td class="gt_row gt_right" headers="pct_asian">14.4%</td>
+<td class="gt_row gt_right" headers="pct_black">23.8%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">5.3%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">85.7%</td>
+<td class="gt_row gt_right" headers="pct_white">−4.1%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">10.7%</td>
+<td class="gt_row gt_right" headers="pct_unknown">−15.2%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">12.1%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">−0.3%</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_right" headers="year">2016</td>
@@ -2790,21 +1557,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">598</td>
 <td class="gt_row gt_right" headers="hispanic">607</td>
 <td class="gt_row gt_right" headers="nhpi">9</td>
-<td class="gt_row gt_right" headers="white">5349</td>
+<td class="gt_row gt_right" headers="white">5,349</td>
 <td class="gt_row gt_right" headers="two_or_more">216</td>
 <td class="gt_row gt_right" headers="unknown">51</td>
 <td class="gt_row gt_right" headers="nonresident">77</td>
-<td class="gt_row gt_right" headers="Grand Total">7179</td>
-<td class="gt_row gt_right" headers="pct_aian">30.00000</td>
-<td class="gt_row gt_right" headers="pct_asian">-1.1450382</td>
-<td class="gt_row gt_right" headers="pct_black">-5.8267717</td>
-<td class="gt_row gt_right" headers="pct_hispanic">1.845638</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-30.76923</td>
-<td class="gt_row gt_right" headers="pct_white">1.7113520</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">15.508021</td>
-<td class="gt_row gt_right" headers="pct_unknown">-8.928571</td>
-<td class="gt_row gt_right" headers="pct_nonresident">18.461538</td>
-<td class="gt_row gt_right" headers="pct_grand_total">1.3553579</td>
+<td class="gt_row gt_right" headers="Grand Total">7,179</td>
+<td class="gt_row gt_right" headers="pct_aian">30.0%</td>
+<td class="gt_row gt_right" headers="pct_asian">−1.1%</td>
+<td class="gt_row gt_right" headers="pct_black">−5.8%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">1.8%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">−30.8%</td>
+<td class="gt_row gt_right" headers="pct_white">1.7%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">15.5%</td>
+<td class="gt_row gt_right" headers="pct_unknown">−8.9%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">18.5%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">1.4%</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_right" headers="year">2017</td>
@@ -2813,21 +1580,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">626</td>
 <td class="gt_row gt_right" headers="hispanic">577</td>
 <td class="gt_row gt_right" headers="nhpi">6</td>
-<td class="gt_row gt_right" headers="white">5047</td>
+<td class="gt_row gt_right" headers="white">5,047</td>
 <td class="gt_row gt_right" headers="two_or_more">167</td>
 <td class="gt_row gt_right" headers="unknown">64</td>
 <td class="gt_row gt_right" headers="nonresident">62</td>
-<td class="gt_row gt_right" headers="Grand Total">6804</td>
-<td class="gt_row gt_right" headers="pct_aian">-23.07692</td>
-<td class="gt_row gt_right" headers="pct_asian">-5.4054054</td>
-<td class="gt_row gt_right" headers="pct_black">4.6822742</td>
-<td class="gt_row gt_right" headers="pct_hispanic">-4.942339</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-33.33333</td>
-<td class="gt_row gt_right" headers="pct_white">-5.6459151</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">-22.685185</td>
-<td class="gt_row gt_right" headers="pct_unknown">25.490196</td>
-<td class="gt_row gt_right" headers="pct_nonresident">-19.480519</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-5.2235687</td>
+<td class="gt_row gt_right" headers="Grand Total">6,804</td>
+<td class="gt_row gt_right" headers="pct_aian">−23.1%</td>
+<td class="gt_row gt_right" headers="pct_asian">−5.4%</td>
+<td class="gt_row gt_right" headers="pct_black">4.7%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">−4.9%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">−33.3%</td>
+<td class="gt_row gt_right" headers="pct_white">−5.6%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">−22.7%</td>
+<td class="gt_row gt_right" headers="pct_unknown">25.5%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">−19.5%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">−5.2%</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_right" headers="year">2018</td>
@@ -2836,21 +1603,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">612</td>
 <td class="gt_row gt_right" headers="hispanic">625</td>
 <td class="gt_row gt_right" headers="nhpi">5</td>
-<td class="gt_row gt_right" headers="white">4904</td>
+<td class="gt_row gt_right" headers="white">4,904</td>
 <td class="gt_row gt_right" headers="two_or_more">183</td>
 <td class="gt_row gt_right" headers="unknown">63</td>
 <td class="gt_row gt_right" headers="nonresident">76</td>
-<td class="gt_row gt_right" headers="Grand Total">6714</td>
-<td class="gt_row gt_right" headers="pct_aian">10.00000</td>
-<td class="gt_row gt_right" headers="pct_asian">-4.0816327</td>
-<td class="gt_row gt_right" headers="pct_black">-2.2364217</td>
-<td class="gt_row gt_right" headers="pct_hispanic">8.318891</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-16.66667</td>
-<td class="gt_row gt_right" headers="pct_white">-2.8333664</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">9.580838</td>
-<td class="gt_row gt_right" headers="pct_unknown">-1.562500</td>
-<td class="gt_row gt_right" headers="pct_nonresident">22.580645</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-1.3227513</td>
+<td class="gt_row gt_right" headers="Grand Total">6,714</td>
+<td class="gt_row gt_right" headers="pct_aian">10.0%</td>
+<td class="gt_row gt_right" headers="pct_asian">−4.1%</td>
+<td class="gt_row gt_right" headers="pct_black">−2.2%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">8.3%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">−16.7%</td>
+<td class="gt_row gt_right" headers="pct_white">−2.8%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">9.6%</td>
+<td class="gt_row gt_right" headers="pct_unknown">−1.6%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">22.6%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">−1.3%</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_right" headers="year">2019</td>
@@ -2859,21 +1626,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">562</td>
 <td class="gt_row gt_right" headers="hispanic">690</td>
 <td class="gt_row gt_right" headers="nhpi">0</td>
-<td class="gt_row gt_right" headers="white">4781</td>
+<td class="gt_row gt_right" headers="white">4,781</td>
 <td class="gt_row gt_right" headers="two_or_more">192</td>
 <td class="gt_row gt_right" headers="unknown">29</td>
 <td class="gt_row gt_right" headers="nonresident">69</td>
-<td class="gt_row gt_right" headers="Grand Total">6554</td>
-<td class="gt_row gt_right" headers="pct_aian">-63.63636</td>
-<td class="gt_row gt_right" headers="pct_asian">-3.4042553</td>
-<td class="gt_row gt_right" headers="pct_black">-8.1699346</td>
-<td class="gt_row gt_right" headers="pct_hispanic">10.400000</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-100.00000</td>
-<td class="gt_row gt_right" headers="pct_white">-2.5081566</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">4.918033</td>
-<td class="gt_row gt_right" headers="pct_unknown">-53.968254</td>
-<td class="gt_row gt_right" headers="pct_nonresident">-9.210526</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-2.3830801</td>
+<td class="gt_row gt_right" headers="Grand Total">6,554</td>
+<td class="gt_row gt_right" headers="pct_aian">−63.6%</td>
+<td class="gt_row gt_right" headers="pct_asian">−3.4%</td>
+<td class="gt_row gt_right" headers="pct_black">−8.2%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">10.4%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">−100.0%</td>
+<td class="gt_row gt_right" headers="pct_white">−2.5%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">4.9%</td>
+<td class="gt_row gt_right" headers="pct_unknown">−54.0%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">−9.2%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">−2.4%</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_right" headers="year">2020</td>
@@ -2882,21 +1649,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">673</td>
 <td class="gt_row gt_right" headers="hispanic">674</td>
 <td class="gt_row gt_right" headers="nhpi">2</td>
-<td class="gt_row gt_right" headers="white">4378</td>
+<td class="gt_row gt_right" headers="white">4,378</td>
 <td class="gt_row gt_right" headers="two_or_more">216</td>
 <td class="gt_row gt_right" headers="unknown">26</td>
 <td class="gt_row gt_right" headers="nonresident">80</td>
-<td class="gt_row gt_right" headers="Grand Total">6290</td>
-<td class="gt_row gt_right" headers="pct_aian">-25.00000</td>
-<td class="gt_row gt_right" headers="pct_asian">4.8458150</td>
-<td class="gt_row gt_right" headers="pct_black">19.7508897</td>
-<td class="gt_row gt_right" headers="pct_hispanic">-2.318841</td>
-<td class="gt_row gt_right" headers="pct_nhpi">Inf</td>
-<td class="gt_row gt_right" headers="pct_white">-8.4291989</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">12.500000</td>
-<td class="gt_row gt_right" headers="pct_unknown">-10.344828</td>
-<td class="gt_row gt_right" headers="pct_nonresident">15.942029</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-4.0280745</td>
+<td class="gt_row gt_right" headers="Grand Total">6,290</td>
+<td class="gt_row gt_right" headers="pct_aian">−25.0%</td>
+<td class="gt_row gt_right" headers="pct_asian">4.8%</td>
+<td class="gt_row gt_right" headers="pct_black">19.8%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">−2.3%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">Inf%</td>
+<td class="gt_row gt_right" headers="pct_white">−8.4%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">12.5%</td>
+<td class="gt_row gt_right" headers="pct_unknown">−10.3%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">15.9%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">−4.0%</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_right" headers="year">2021</td>
@@ -2905,21 +1672,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">678</td>
 <td class="gt_row gt_right" headers="hispanic">686</td>
 <td class="gt_row gt_right" headers="nhpi">1</td>
-<td class="gt_row gt_right" headers="white">4139</td>
+<td class="gt_row gt_right" headers="white">4,139</td>
 <td class="gt_row gt_right" headers="two_or_more">234</td>
 <td class="gt_row gt_right" headers="unknown">20</td>
 <td class="gt_row gt_right" headers="nonresident">100</td>
-<td class="gt_row gt_right" headers="Grand Total">6094</td>
-<td class="gt_row gt_right" headers="pct_aian">33.33333</td>
-<td class="gt_row gt_right" headers="pct_asian">-2.5210084</td>
-<td class="gt_row gt_right" headers="pct_black">0.7429421</td>
-<td class="gt_row gt_right" headers="pct_hispanic">1.780415</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-50.00000</td>
-<td class="gt_row gt_right" headers="pct_white">-5.4591138</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">8.333333</td>
-<td class="gt_row gt_right" headers="pct_unknown">-23.076923</td>
-<td class="gt_row gt_right" headers="pct_nonresident">25.000000</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-3.1160572</td>
+<td class="gt_row gt_right" headers="Grand Total">6,094</td>
+<td class="gt_row gt_right" headers="pct_aian">33.3%</td>
+<td class="gt_row gt_right" headers="pct_asian">−2.5%</td>
+<td class="gt_row gt_right" headers="pct_black">0.7%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">1.8%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">−50.0%</td>
+<td class="gt_row gt_right" headers="pct_white">−5.5%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">8.3%</td>
+<td class="gt_row gt_right" headers="pct_unknown">−23.1%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">25.0%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">−3.1%</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_right" headers="year">2022</td>
@@ -2928,21 +1695,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">820</td>
 <td class="gt_row gt_right" headers="hispanic">838</td>
 <td class="gt_row gt_right" headers="nhpi">8</td>
-<td class="gt_row gt_right" headers="white">4157</td>
+<td class="gt_row gt_right" headers="white">4,157</td>
 <td class="gt_row gt_right" headers="two_or_more">272</td>
 <td class="gt_row gt_right" headers="unknown">46</td>
 <td class="gt_row gt_right" headers="nonresident">89</td>
-<td class="gt_row gt_right" headers="Grand Total">6509</td>
-<td class="gt_row gt_right" headers="pct_aian">50.00000</td>
-<td class="gt_row gt_right" headers="pct_asian">17.6724138</td>
-<td class="gt_row gt_right" headers="pct_black">20.9439528</td>
-<td class="gt_row gt_right" headers="pct_hispanic">22.157434</td>
-<td class="gt_row gt_right" headers="pct_nhpi">700.00000</td>
-<td class="gt_row gt_right" headers="pct_white">0.4348877</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">16.239316</td>
-<td class="gt_row gt_right" headers="pct_unknown">130.000000</td>
-<td class="gt_row gt_right" headers="pct_nonresident">-11.000000</td>
-<td class="gt_row gt_right" headers="pct_grand_total">6.8099770</td>
+<td class="gt_row gt_right" headers="Grand Total">6,509</td>
+<td class="gt_row gt_right" headers="pct_aian">50.0%</td>
+<td class="gt_row gt_right" headers="pct_asian">17.7%</td>
+<td class="gt_row gt_right" headers="pct_black">20.9%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">22.2%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">700.0%</td>
+<td class="gt_row gt_right" headers="pct_white">0.4%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">16.2%</td>
+<td class="gt_row gt_right" headers="pct_unknown">130.0%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">−11.0%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">6.8%</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_right" headers="year">2023</td>
@@ -2951,21 +1718,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">770</td>
 <td class="gt_row gt_right" headers="hispanic">820</td>
 <td class="gt_row gt_right" headers="nhpi">7</td>
-<td class="gt_row gt_right" headers="white">3857</td>
+<td class="gt_row gt_right" headers="white">3,857</td>
 <td class="gt_row gt_right" headers="two_or_more">289</td>
 <td class="gt_row gt_right" headers="unknown">40</td>
 <td class="gt_row gt_right" headers="nonresident">142</td>
-<td class="gt_row gt_right" headers="Grand Total">6219</td>
-<td class="gt_row gt_right" headers="pct_aian">0.00000</td>
-<td class="gt_row gt_right" headers="pct_asian">5.4945055</td>
-<td class="gt_row gt_right" headers="pct_black">-6.0975610</td>
-<td class="gt_row gt_right" headers="pct_hispanic">-2.147971</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-12.50000</td>
-<td class="gt_row gt_right" headers="pct_white">-7.2167428</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">6.250000</td>
-<td class="gt_row gt_right" headers="pct_unknown">-13.043478</td>
-<td class="gt_row gt_right" headers="pct_nonresident">59.550562</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-4.4553695</td>
+<td class="gt_row gt_right" headers="Grand Total">6,219</td>
+<td class="gt_row gt_right" headers="pct_aian">0.0%</td>
+<td class="gt_row gt_right" headers="pct_asian">5.5%</td>
+<td class="gt_row gt_right" headers="pct_black">−6.1%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">−2.1%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">−12.5%</td>
+<td class="gt_row gt_right" headers="pct_white">−7.2%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">6.2%</td>
+<td class="gt_row gt_right" headers="pct_unknown">−13.0%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">59.6%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">−4.5%</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_right" headers="year">2024</td>
@@ -2974,21 +1741,21 @@ This warning is displayed once every 8 hours.</code></pre>
 <td class="gt_row gt_right" headers="black">763</td>
 <td class="gt_row gt_right" headers="hispanic">842</td>
 <td class="gt_row gt_right" headers="nhpi">3</td>
-<td class="gt_row gt_right" headers="white">3546</td>
+<td class="gt_row gt_right" headers="white">3,546</td>
 <td class="gt_row gt_right" headers="two_or_more">283</td>
 <td class="gt_row gt_right" headers="unknown">49</td>
 <td class="gt_row gt_right" headers="nonresident">109</td>
-<td class="gt_row gt_right" headers="Grand Total">5842</td>
-<td class="gt_row gt_right" headers="pct_aian">-16.66667</td>
-<td class="gt_row gt_right" headers="pct_asian">-15.9722222</td>
-<td class="gt_row gt_right" headers="pct_black">-0.9090909</td>
-<td class="gt_row gt_right" headers="pct_hispanic">2.682927</td>
-<td class="gt_row gt_right" headers="pct_nhpi">-57.14286</td>
-<td class="gt_row gt_right" headers="pct_white">-8.0632616</td>
-<td class="gt_row gt_right" headers="pct_two_or_more">-2.076125</td>
-<td class="gt_row gt_right" headers="pct_unknown">22.500000</td>
-<td class="gt_row gt_right" headers="pct_nonresident">-23.239437</td>
-<td class="gt_row gt_right" headers="pct_grand_total">-6.0620679</td>
+<td class="gt_row gt_right" headers="Grand Total">5,842</td>
+<td class="gt_row gt_right" headers="pct_aian">−16.7%</td>
+<td class="gt_row gt_right" headers="pct_asian">−16.0%</td>
+<td class="gt_row gt_right" headers="pct_black">−0.9%</td>
+<td class="gt_row gt_right" headers="pct_hispanic">2.7%</td>
+<td class="gt_row gt_right" headers="pct_nhpi">−57.1%</td>
+<td class="gt_row gt_right" headers="pct_white">−8.1%</td>
+<td class="gt_row gt_right" headers="pct_two_or_more">−2.1%</td>
+<td class="gt_row gt_right" headers="pct_unknown">22.5%</td>
+<td class="gt_row gt_right" headers="pct_nonresident">−23.2%</td>
+<td class="gt_row gt_right" headers="pct_grand_total">−6.1%</td>
 </tr>
 </tbody>
 </table>
@@ -2998,6 +1765,7 @@ This warning is displayed once every 8 hours.</code></pre>
 </div>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

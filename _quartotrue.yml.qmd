@@ -1,0 +1,18 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "STA9750 Spring 2026"
+  navbar:
+    left:
+      - text: Home
+        file: index.qmd
+      - text: Mini Project 01
+        file: mp01.qmd
+      - text: Mini Project 02
+        file: mp02.qmd
+
+format:
+  html:
+    theme: cosmo
