@@ -4,13 +4,14 @@ project:
 
 website:
   title: "STA 9750 Submission Material"
-  description:
-    Course Projects for STA 9750 at Baruch College
+  description: "Course Projects for STA 9750 at Baruch College"
   site-url: "https://laurenrichbetch.github.io/STA9750-2026-SPRING/"
   navbar:
     background: primary
     search: false
     left:
+      - href: index.qmd
+        text: Home
       - href: mp02.qmd
         text: MP02
 
