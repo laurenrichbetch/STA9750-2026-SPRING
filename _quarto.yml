@@ -10,7 +10,10 @@ website:
   navbar:
     background: primary
     search: false
-    
+    left:
+      - href: mp02.qmd
+        text: MP02
+
 format:
   html:
     theme: lux
