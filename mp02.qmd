@@ -17,8 +17,9 @@ editor:
 
 In this mini project, I will analyze how people spend their time.
 
-## Load Data
+
 ```{r}
+## Load Data
 library(tidyverse)
 library(glue)
 library(readxl)
@@ -150,8 +151,9 @@ head(act, 10)
 head(activities, 10)
 ```
 
-## Join data into one combined dataset
+
 ```{r}
+## Join data into one combined dataset
 full_data <- act %>%
   left_join(resp, by = "participant_id") %>%
   left_join(rost, by = "participant_id") %>%
@@ -159,8 +161,9 @@ full_data <- act %>%
 
 ```
 
-## How many total hours were recorded on sleeping-type activities
+
 ```{r}
+## Total hours were recorded on sleeping-type activities
 total_sleep_hours <- full_data %>%
   filter(level1_code == "010000") %>%
   summarise(total_hours = sum(time_spent_min, na.rm = TRUE) / 60)
@@ -184,8 +187,9 @@ head(full_data, 10)
 colnames(full_data)
 ```
 
-#Weights
+
 ```{r}
+#Weights
 ##Weighted average time alone (all years)
 
 resp %>%
@@ -225,8 +229,9 @@ full_data %>%
   mutate(weighted_hours = weighted_minutes / 60)
 ```
 
-## Activity 4
+
 ```{r}
+## Activity 4
 library(tidyverse)
 
 ##remove duplicate values and create diary_id
@@ -281,7 +286,7 @@ full_data %>%
 
 
 
-## Activity 4 - Sentences
+## WRITE UP
 
 Since 2003 a total of `r n_respondents` different respondents have completed an ATUS survey.
 
@@ -294,8 +299,7 @@ On average Americans sleep about `r round(sleep_hours, 2)` hours per night.
 Among Americans with one or more children in the home the average amount of time spent caring for their children is `r round(childcare_hours, 2)` hours per day.
 
 
-## Activity 5 - Data Tables
-
+## DATA TABLES
 ```{r}
 
 library(gt)
@@ -394,22 +398,25 @@ transit_table
 
 ```
 
-#View Activities
+
 ```{r}
+#View Activities
 full_data %>%
   distinct(task_level1) %>%
   arrange(task_level1)
 
 ```
 
-#View Activities
+
 ```{r}
+#View Activities
 names(full_data)
 ```
 
-## Activity 5 - Data Tables - Cont'd
+
 
 ```{r}
+## Activity 5 - Data Tables - Cont'd
 ## Create age groups
 full_data <- full_data %>%
   mutate(
@@ -462,9 +469,10 @@ favorite_table %>%
 
 ```
 
-## Activity 6 - Graph #1
+
 
 ```{r}
+## Activity 6 - Graph #1
 ##  How does the amount of time spent on household activities change as Americans age?
 
 full_data <- full_data %>%
@@ -494,22 +502,21 @@ ggplot(household_plot_data, aes(x = age_group, y = avg_minutes, group = 1)) +
   geom_line(linewidth = 1.3, color = "#003f7f") +     # dark blue line
   geom_point(size = 3.5, color = "#66b2ff") +         # light blue dots
   labs(
-    title = "Average Time Spent on Household Activities by Age Group",
+    title = "Avg. Time Spent on HH Activities by Age",
     x = "Age Group",
     y = "Minutes per Day"
   ) +
   theme_minimal(base_size = 15)
 
 ```
-## Write up
+## WRITE UP
 
 As people get older they spend more time on household activities - this makes sense as the older community (60+) is largely going to be retired and spend more time at home versus younger demographics, who are working and out of the house.  It's also possible that the same tasks that used to be completed in a shorter amount of time now take longer as the older demographics do not move as quickly as they once had - they would also need to be mindful of moving in a way that would prevent injuries.
 
 
-## Activity 6 - Graph #2
 
 ```{r}
-
+## Activity 6 - Graph #2
 library(dplyr)
 library(ggplot2)
 
@@ -537,23 +544,21 @@ ggplot(activity_counts, aes(x = reorder(task_level1, n), y = n)) +
   geom_col(fill = "#2C7BB6") +
   coord_flip() +
   labs(
-    title = "Most Popular Summer Activities Among Americans Engaged in Education Activities",
+    title = "Summer Activities for Educators",
     x = "Activity",
-    y = "Count"
+    y = "# People"
   ) +
   theme_minimal(base_size = 14)
 
 ```
 
-## Write up
+## wRITE UP
 
 During the summer months, people who work in Education spend most of their time on personal care, with Socializing, Relaxing and Leisure as a close second.  This makes sense as working in education during the school year requires early wake up times, and lots of energy – thus, making the summer the perfect opportunity to relax, refresh and reset.
 
 
-## Activity 6 - Graph #3
-
 ```{r}
-
+## Activity 6 - Graph #3
 
 library(dplyr)
 library(ggplot2)
@@ -603,7 +608,7 @@ age_summary <- student_time %>%
 ggplot(age_summary, aes(x = age_group, y = avg_minutes)) +
   geom_col(fill = "#2C7BB6") +
   labs(
-    title = "Average Time Spent on Education Activities by Age Group",
+    title = "Avg. Time Spent on Education Activities by Age",
     x = "Age Group",
     y = "Average Minutes per Day"
   ) +
@@ -612,15 +617,15 @@ ggplot(age_summary, aes(x = age_group, y = avg_minutes)) +
 
 ```
 
-## Write up
+## WRITE UP
 
 The amount of time spent on educational activities is comparable across age groups. 
 
 
-## Activity 6 - Graph #4
+
 
 ```{r}
-
+## Activity 6 - Graph #4
 library(dplyr)
 library(ggplot2)
 
@@ -671,7 +676,7 @@ ggplot(sport_ranks, aes(
   geom_point(size = 3) +
   scale_y_reverse(breaks = 1:6) +
   labs(
-    title = "How Interest in Specific Sports Changes Across Age Groups",
+    title = "How Interest in Sports by Age",
     x = "Age Group",
     y = "Rank (1 = Most Time Spent)",
     color = "Sport"
@@ -684,14 +689,13 @@ ggplot(sport_ranks, aes(
 
 ```
 
-## Write up
+## WRITE UP
 
 It is unsurprising that participation in water sports significantly decreases as people age – water sports require people to be very fit, as it can often mean treading water for extended periods of time – as people age, they lose muscle mass, and therefore, it can be dangerous to partake in a competitive sport in the water.  Likewise, weight-lifting and/or strength-training also skews young, as it can be challenging and unsafe to lift heavy weights for older demographics.  More people play golf as they continue to age as it’s not a strenuous sport.  Walking and fishing trend flat across demos as these are also low-impact sports/ activities.
 
-## Activity 6 - Graph #5
 
 ```{r}
-
+## Activity 6 - Graph #5
 library(dplyr)
 library(ggplot2)
 
@@ -725,7 +729,7 @@ ggplot(family_summary, aes(x = num_children, y = avg_minutes_per_child)) +
   geom_line(linewidth = 1.5, color = "#2C7BB6") +
   geom_point(size = 3, color = "#2C7BB6") +
   labs(
-    title = "How Parental Time Per Child Changes as Family Size Increases",
+    title = "Parental Time Per Child Changes with Family Size",
     x = "Number of Children in Household",
     y = "Average Minutes of Childcare Per Child"
   ) +
@@ -733,14 +737,13 @@ ggplot(family_summary, aes(x = num_children, y = avg_minutes_per_child)) +
 
 
 ```
-## Write up
+## WRITE UP
 
 Time per child decreases as the number of children in the household increases – this makes so much sense because each parent only has a set amount of hours in the day, and as more children enter the household, there is simply less time to be spent on each one of time.
 
-## Activity 7
 
 ```{r}
-
+## Activity 7
 library(dplyr)
 library(ggplot2)
 
@@ -903,10 +906,10 @@ print(college_results$typical)
 print("College undergraduates: Target Hits")
 print(college_hits)
 
-print("Sophia: Typical Levels")
+print("My Demo: Typical Levels")
 print(sophia_results$typical)
 
-print("Sophia: Target Hits")
+print("My Demo: Target Hits")
 print(sophia_hits)
 
 ```
@@ -933,7 +936,7 @@ Target Levels: Sleep: 7.5 hours, Exercise: 45 minutes, Socializing: 1 hour, Chor
 
 
 
-## AI Usage Statement
+## AI USAGE STATEMENT
 
 Copilot was used to help write the code in this project, but all non-code text was generated without the use of any Generative AI tools. Additionally, Copilot was used to brainstorm ideas for the final open-ended prompt.
 
