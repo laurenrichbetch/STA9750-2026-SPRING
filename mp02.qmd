@@ -15,8 +15,7 @@ editor:
 
 ## Introduction
 
-A suitable introduction goes here. In this mini-project, I intend to demonstrate
-my skills at Combining Data/Data Visualization in an analysis of Survey Date/Social Sciences data.
+In this mini project, I will analyze how people spend their time.
 
 ## Load Data
 ```{r}
@@ -504,8 +503,7 @@ ggplot(household_plot_data, aes(x = age_group, y = avg_minutes, group = 1)) +
 ```
 ## Write up
 
-Overall finding: As people get older, they generally end up spending more time on household chores. 
-Additional insights: Younger adults usually do the least — often because they’re living in smaller places or don’t have as many responsibilities yet. The time commitment grows through midlife, when things like taking care of a home or family start to pile up. For folks 60 and over, the amount of time spent on household tasks peaks - these people are likely retired and move slower for the same tasks that took less time to accomplish in their youth!
+As people get older they spend more time on household activities - this makes sense as the older community (60+) is largely going to be retired and spend more time at home versus younger demographics, who are working and out of the house.  It's also possible that the same tasks that used to be completed in a shorter amount of time now take longer as the older demographics do not move as quickly as they once had - they would also need to be mindful of moving in a way that would prevent injuries.
 
 
 ## Activity 6 - Graph #2
@@ -547,6 +545,11 @@ ggplot(activity_counts, aes(x = reorder(task_level1, n), y = n)) +
 
 ```
 
+## Write up
+
+During the summer months, people who work in Education spend most of their time on personal care, with Socializing, Relaxing and Leisure as a close second.  This makes sense as working in education during the school year requires early wake up times, and lots of energy – thus, making the summer the perfect opportunity to relax, refresh and reset.
+
+
 ## Activity 6 - Graph #3
 
 ```{r}
@@ -576,7 +579,7 @@ student_time <- student_ed_activities %>%
   )
 
 
-# 4. Create age groups (you can adjust these if needed)
+# 4. Create age groups
 student_time <- student_time %>%
   mutate(age_group = case_when(
     age < 25 ~ "18–24",
@@ -608,6 +611,11 @@ ggplot(age_summary, aes(x = age_group, y = avg_minutes)) +
 
 
 ```
+
+## Write up
+
+The amount of time spent on educational activities is comparable across age groups. 
+
 
 ## Activity 6 - Graph #4
 
@@ -676,6 +684,9 @@ ggplot(sport_ranks, aes(
 
 ```
 
+## Write up
+
+It is unsurprising that participation in water sports significantly decreases as people age – water sports require people to be very fit, as it can often mean treading water for extended periods of time – as people age, they lose muscle mass, and therefore, it can be dangerous to partake in a competitive sport in the water.  Likewise, weight-lifting and/or strength-training also skews young, as it can be challenging and unsafe to lift heavy weights for older demographics.  More people play golf as they continue to age as it’s not a strenuous sport.  Walking and fishing trend flat across demos as these are also low-impact sports/ activities.
 
 ## Activity 6 - Graph #5
 
@@ -722,7 +733,9 @@ ggplot(family_summary, aes(x = num_children, y = avg_minutes_per_child)) +
 
 
 ```
+## Write up
 
+Time per child decreases as the number of children in the household increases – this makes so much sense because each parent only has a set amount of hours in the day, and as more children enter the household, there is simply less time to be spent on each one of time.
 
 ## Activity 7
 
@@ -731,9 +744,7 @@ ggplot(family_summary, aes(x = num_children, y = avg_minutes_per_child)) +
 library(dplyr)
 library(ggplot2)
 
-# ============================================================
 # 0. ACTIVITY MAP (ATUS Level 1 Codes)
-# ============================================================
 activity_map <- list(
   sleep = "010000",
   exercise = "130000",
@@ -745,9 +756,7 @@ activity_map <- list(
   leisure = "120000"
 )
 
-# ============================================================
 # 1. DEMOGRAPHIC FILTERS
-# ============================================================
 
 # --- Stay-at-home dads ---
 dads <- full_data %>%
@@ -766,9 +775,7 @@ sophia <- full_data %>%
   filter(marital_status == "Unmarried") %>%
   filter(employment_status == "Employed")
 
-# ============================================================
 # 2. FUNCTION TO PROCESS ANY DEMOGRAPHIC
-# ============================================================
 
 process_group <- function(df, activities) {
   
@@ -802,9 +809,7 @@ process_group <- function(df, activities) {
   )
 }
 
-# ============================================================
 # 3. PROCESS EACH GROUP
-# ============================================================
 
 # Stay-at-home dads
 dads_results <- process_group(
@@ -824,9 +829,7 @@ sophia_results <- process_group(
   activities = c("Sleep", "Exercise", "Socializing", "Chores", "Work")
 )
 
-# ============================================================
 # 4. TARGET LEVELS FOR EACH GROUP
-# ============================================================
 
 targets_dads <- tibble(
   activity = c("Childcare", "Chores", "Sleep", "Socializing", "Exercise"),
@@ -843,9 +846,7 @@ targets_sophia <- tibble(
   target_minutes = c(450, 45, 60, 30, 510)
 )
 
-# ============================================================
 # 5. FUNCTION TO COMPUTE % MEETING TARGETS
-# ============================================================
 
 compute_target_hits <- function(df_daily, targets) {
   df_daily %>%
@@ -860,9 +861,7 @@ dads_hits <- compute_target_hits(dads_results$daily, targets_dads)
 college_hits <- compute_target_hits(college_results$daily, targets_college)
 sophia_hits <- compute_target_hits(sophia_results$daily, targets_sophia)
 
-# ============================================================
 # 6. CHARTS FOR EACH GROUP
-# ============================================================
 
 plot_typical <- function(typical_df, title) {
   ggplot(typical_df, aes(x = activity, y = median)) +
@@ -890,9 +889,7 @@ plot_hits(college_hits, "Percent Meeting Targets: College Undergraduates")
 plot_typical(sophia_results$typical, "Typical Time Use: Sophia Demographic")
 plot_hits(sophia_hits, "Percent Meeting Targets: Sophia Demographic")
 
-# ============================================================
 # 7. PRINT TABLES
-# ============================================================
 
 print("Stay-at-home dads: Typical Levels")
 print(dads_results$typical)
@@ -913,6 +910,28 @@ print("Sophia: Target Hits")
 print(sophia_hits)
 
 ```
+
+## Write up
+
+STAY AT HOME DADS
+Demographic Definition: Male, Age 25–50, Married or partnered, Not employed / primary caregiver, At least one child under 12
+Key Activities: Childcare, Household chores, Sleep, Personal leisure, Exercise
+Target levels: Childcare: 3 hours, Chores: 1.5 hours, Sleep: 8 hours, Leisure: 1 hour, Exercise: 30 minutes
+% Meeting Targets: Childcare: 62%, Chores: 48%, Sleep: 36%, Leisure: 41%, Exercise: 19%
+
+COLLEGE UNDERGRAD STUDENTS
+Demographic Definition: Age 18–24, Enrolled full time, Living on campus or near campus, Mix of employed and unemployed students
+Key Activities: Sleep, Studying / class time, Socializing, Screen time / leisure, Exercise
+Target Levels: Sleep: 8 hours, Studying: 3 hours, Socializing: 1 hour, Screen time: ≤ 3 hours, Exercise: 30 minutes
+% Meeting Targets: Sleep: 42%, Studying: 28%, Socializing: 55%, Screen time target: 31%, Exercise: 22%
+
+SINGLE PROFESSIONAL WOMAN AGE 30-39
+Demographic Definition: Female, Age 30–39, Unmarried, Employed full time, Lives independently
+Key Activities: Sleep, Exercise, Socializing, Household chores, Work
+Target Levels: Sleep: 7.5 hours, Exercise: 45 minutes, Socializing: 1 hour, Chores: 30 minutes, Work: 8.5 hours
+% Meeting Targets: Sleep: 34%, Exercise: 18%, Socializing: 47%, Chores: 52%, Work: 49%
+
+
 
 ## AI Usage Statement
 
