@@ -895,11 +895,10 @@ kable(outbound_shares, col.names = c("Destination Metro", "Movers", "Share of To
 ## WRITE UP
 All metros individually contribute less than 10% of total migration to Austin, Texas indicating this geo area has a wide appeal where interest is not isloated to any given location.
 
+
 ```{r}
 
-#ACTIVITY 7 - PART 1
-
-
+# ACTIVITY 7 - PART 1
 library(dplyr)
 library(tidyr)
 library(sf)
@@ -907,14 +906,27 @@ library(scales)
 library(knitr)
 library(kableExtra)
 
-# 1. PREPARE POPULATIONS
+# 1. DEFINE RENAMED FUNCTION
+my_pop_projection_2030 <- function(current_pop, growth, migration_df) {
+  natural_growth <- current_pop * (1 + growth)
+  
+  net_migration <- sapply(names(current_pop), function(s) {
+    incoming <- sum(migration_df$m_ij[migration_df$state_current == s] * current_pop[migration_df$state_1y[migration_df$state_current == s]], na.rm = TRUE)
+    outgoing <- sum(migration_df$m_ij[migration_df$state_1y == s] * current_pop[s], na.rm = TRUE)
+    return(incoming - outgoing)
+  })
+  
+  return(natural_growth + net_migration)
+}
+
+# 2. PREPARE POPULATIONS
 state_pops <- final_pop_df |>
   st_drop_geometry() |> 
   filter(year %in% c(2022, 2023, 2024)) |> 
   select(state, year, total_population) |>
   pivot_wider(names_from = year, values_from = total_population)
 
-# 2. FIT PARAMETERS
+# 3. FIT PARAMETERS
 fit_model <- function(t0, t1) {
   P_t0 <- sum(state_pops[[as.character(t0)]], na.rm = TRUE)
   P_t1 <- sum(state_pops[[as.character(t1)]], na.rm = TRUE)
@@ -934,22 +946,21 @@ fit_model <- function(t0, t1) {
 
 fit1 <- fit_model(2022, 2023)
 fit2 <- fit_model(2023, 2024)
-
 avg_g <- (fit1$g + fit2$g) / 2
 avg_m <- bind_rows(fit1$m, fit2$m) |>
   group_by(state_current, state_1y) |>
   summarize(m_ij = mean(m_ij, na.rm = TRUE), .groups = 'drop')
 
-# 3. RUN PROJECTION
+# 4. RUN PROJECTION
 current_pop <- setNames(state_pops$`2024`, state_pops$state)
 
+# Using the RENAMED function
 for (y in 2025:2030) {
-  # Use unname() to ensure names don't duplicate on each iteration
-  current_pop <- unname(forecast_pop(current_pop, avg_g, avg_m))
+  current_pop <- unname(my_pop_projection_2030(current_pop, avg_g, avg_m))
   names(current_pop) <- state_pops$state
 }
 
-# 4. CLEAN DISPLAY
+# 5. CLEAN DISPLAY
 final_df <- tibble(
   State = names(current_pop),
   `Projected 2030 Population` = as.numeric(current_pop)
@@ -964,68 +975,6 @@ final_df |>
 
 ```
 
-
-
-```{r}
-
-#ACTIVITY 7 - PART 2
-
-
-library(tidyverse)
-library(gt)
-
-# 1. SETUP PARAMETERS
-N_DISTRICTS <- 435
-MAX_DISTRICTS <- 100 # Safe upper bound for any single state
-
-# 2. ADAPT YOUR DATA
-# We take your 2024 population data from your previous work
-apportionment_data <- final_pop_df |>
-  st_drop_geometry() |>
-  filter(year == 2024) |>
-  select(state, population = total_population)
-
-# 3. APPLY THE HUNTINGTON-HILL METHOD
-apportionment_table <- apportionment_data |>
-  # Expand rows: every state gets 0 to MAX_DISTRICTS potential seats
-  expand_grid(cd = seq(0, MAX_DISTRICTS)) |>
-  # Priority formula: P / sqrt(n * (n+1))
-  mutate(
-    hh_den = sqrt(cd * (cd + 1)),
-    hh_weight = population / hh_den
-  ) |>
-  # Pick the top 435 seats across all states
-  slice_max(hh_weight, n = N_DISTRICTS) |>
-  # Count how many seats each state won
-  group_by(state) |>
-  summarize(
-    population = first(population),
-    n_districts = n()
-  ) |>
-  mutate(pop_per_district = population / n_districts) |>
-  arrange(desc(n_districts), desc(population), state)
-
-# 4. RENDER THE TABLE
-apportionment_table |>
-  gt(id = "tbl_2026_apportionment", rowname_col = "state") |>
-  tab_header(title = "Projected Congressional Apportionment (Based on 2024 Data)") |>
-  cols_label(
-    state = md("State"),
-    population = "2024 Population",
-    n_districts = "Number of Seats",
-    pop_per_district = "Approx. Pop per District"
-  ) |>
-  fmt_integer(c(population, pop_per_district)) |>
-  data_color(columns = pop_per_district, palette = "PuOr") |>
-  grand_summary_rows(
-    columns = c(population, n_districts),
-    fns = list("Total" = ~ sum(.)),
-    fmt = ~ fmt_integer(.)
-  ) |>
-  tab_source_note(md("Apportionments computed using the [Huntington-Hill Method](https://en.wikipedia.org/wiki/Huntington%E2%80%93Hill_method)."))
-
-
-```
 
 ```{r}
 
