@@ -3,3 +3,5 @@
 .RDataTmp*
 .Rproj.user/
 data/mp02/
+/.quarto/
+**/*.quarto_ipynb
