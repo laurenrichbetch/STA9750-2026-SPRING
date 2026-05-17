@@ -1,6 +1,6 @@
 ---
 title: "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics"
-subtitle: "STA9750: Multivariate Statistics — Final Individual Report"
+subtitle: "Final Individual Report"
 author: "Lauren M. Rich"
 date: "2026-05-21"
 format:
