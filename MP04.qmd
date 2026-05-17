@@ -3,9 +3,11 @@ title: "Mini-Project 04 - Going for the Gold"
 author: "laurenrichbetch"
 editor:
     mode: source
-format:
-    html:
-        code-fold: true
+format: 
+  html:
+    theme: lux
+    toc: false
+    echo: false
 ---
 
 
@@ -354,13 +356,17 @@ ggplot(final_medals_df, aes(x = country_code, y = total_golds, fill = olympic_st
   )
 
 ```
-#Finding 1:
+### #Finding 1:
 All of the countries on this chart wins more gold medals when they host the Olympics versus when they play in another country.
-#Finding 2:
-Some countries benefit from their home-turf more than others. Specifically, Great Britain and Australia see a large spike when they host. While the US fares better at home, the scores are more spread.
-#Finding 3:
-Great Britain, Australia and France see consistent performance when playing away from home, however, when they host, their results are unpredictable.
 
+### #Finding 2:
+Some countries benefit from their home-turf more than others. 
+
+* Specifically, Great Britain and Australia see a large spike when they host. 
+* While the US fares better at home, the scores are more spread.
+
+### #Finding 3:
+Great Britain, Australia and France see consistent performance when playing away from home, however, when they host, their results are unpredictable.
 ```{r}
 #| label: EDA 2
 #| message: false
@@ -402,11 +408,11 @@ olympedia_medals |>
 
 ```
 
-#Finding 4:
+### #Finding 4:
 Beijing 2008 saw incredibly strong performance, winning 100 medals total.
-#Finding 5:
+### #Finding 5:
 Hosting the Olympics doesn't guarantee that you'll win a lot of medals - Brazil 2016 is an example of this.
-#Finding 6:
+### #Finding 6:
 Gold is the most frequent medal won with Paris 2024 as an exception.
 
 ```{r}
@@ -434,11 +440,11 @@ ggplot(top_disciplines_us, aes(x = reorder(discipline, golds), y = golds)) +
 
 ```
 
-#Finding 7:
+### #Finding 7:
 Athletics (Track and Field) dominate this chart, accounting for the majority of all historical US gold medals.
-#Finding 8:
+### #Finding 8:
 There is a steep drop after Swimming, indicating these areas are smaller contributors of success versus the key driver.
-#Finding 9:
+### #Finding 9:
 The US scored lowest in tennis as the 'big three' (Novak Djokovic, Rafael Nadal, Roger Federer) have dominated the sport, leaving no room for US athletes to take home gold.
 
 
@@ -466,11 +472,11 @@ olympedia_medals |>
 
 ```
 
-#Finding 10:
+### #Finding 10:
 Track and Field (Athletics) is the biggest driver of the US gold wins.
-#Finding 11:
+### #Finding 11:
 Swimming is a close second to Track and Field (Athletics), accounting for nearly one-third of gold medals.
-#Finding 12:
+### #Finding 12:
 As basketball only has a few gold medals available, therefore, the 2 wins is a huge accomplishment.
 
 
@@ -752,7 +758,7 @@ forecast_2028 %>%
 
 ```
 
-#Findings
+### #Findings
 Hosting the Olympics shifts the USA teams chances of winning the top spot.  The most likely scenario is that we win 50 gold metals, which is an increase from the 40 won in Paris 2024.
 
 
@@ -838,10 +844,10 @@ final_forecast_table %>%
 
 ```
 
-#Findings
+### #Findings
 There is high confidence that the US will win 50 gold metals in 2028. The benefit of Monte Carlo is that this approach accounts for the joint probability of events - it's highly unlikely that the US would experience both the worst and best case scenarios at the same time - therefore, extreme outliers have been removed.
 
-#Final Deliverable
+### #Final Deliverable
 
 ## Executive Summary
 
@@ -886,3 +892,8 @@ Sponsorship of the LA 2028 Olympic Games is an investment in a highly predictabl
 Secure your sponsorship early. This is a rare opportunity to align your brand with a narrative of victory, strong performance, and global excellence!
 
 
+::: {.callout-note title="AI Usage Statement" collapse="true"}
+
+Gemini was used to help write the code in this project, but all non-code text was generated without the use of any Generative AI tools. Additionally, Gemini was used to provide additional background information on the topic and to brainstorm ideas for the final open-ended prompt.
+
+:::
