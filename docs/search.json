@@ -138,5 +138,103 @@
     "title": "Mini-Project 04 - Going for the Gold",
     "section": "Conclusion",
     "text": "Conclusion\nSponsorship of the LA 2028 Olympic Games is an investment in a highly predictable event. Backed by modeling and millions of simulated trials, our forecast shows that Team USA will capture the global spotlight on home soil.\nSecure your sponsorship early. This is a rare opportunity to align your brand with a narrative of victory, strong performance, and global excellence!\n\n\n\n\n\n\nNoteAI Usage Statement\n\n\n\n\n\nGemini was used to help write the code in this project, but all non-code text was generated without the use of any Generative AI tools. Additionally, Gemini was used to provide additional background information on the topic and to brainstorm ideas for the final open-ended prompt."
+  },
+  {
+    "objectID": "Individual_Report.html",
+    "href": "Individual_Report.html",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "",
+    "text": "This report establishes a fully reproducible analytical evaluation of methane (\\(CH_4\\)) emissions within the United States from 1990 through 2024, including an extended structural estimation for the 2025 fiscal year. Leveraging live programmatic API interfaces from Climate Watch and the Food and Agriculture Organization Corporate Statistical Database (FAOSTAT), this research decouples macro-industrial emission vectors from highly granular, species-level agricultural data. By isolating true effects of interest via computer-based bootstrap simulation, we identify that while macro-sectors exhibit rigid, policy-driven emission plateaus, biological livestock emissions are profoundly skewed by singular species concentrations—primarily Cattle—introducing systemic variance and directional exposure to programmatic agricultural interventions. The empirical results demonstrate that policy frameworks targeting methane mitigation cannot rely on aggregate economic proxies; instead, they must account for the distinct, decoupled variances inherent in biological versus industrial production regimes."
+  },
+  {
+    "objectID": "Individual_Report.html#executive-summary",
+    "href": "Individual_Report.html#executive-summary",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "",
+    "text": "This report establishes a fully reproducible analytical evaluation of methane (\\(CH_4\\)) emissions within the United States from 1990 through 2024, including an extended structural estimation for the 2025 fiscal year. Leveraging live programmatic API interfaces from Climate Watch and the Food and Agriculture Organization Corporate Statistical Database (FAOSTAT), this research decouples macro-industrial emission vectors from highly granular, species-level agricultural data. By isolating true effects of interest via computer-based bootstrap simulation, we identify that while macro-sectors exhibit rigid, policy-driven emission plateaus, biological livestock emissions are profoundly skewed by singular species concentrations—primarily Cattle—introducing systemic variance and directional exposure to programmatic agricultural interventions. The empirical results demonstrate that policy frameworks targeting methane mitigation cannot rely on aggregate economic proxies; instead, they must account for the distinct, decoupled variances inherent in biological versus industrial production regimes."
+  },
+  {
+    "objectID": "Individual_Report.html#introduction-and-question-realignment",
+    "href": "Individual_Report.html#introduction-and-question-realignment",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "0.2 Introduction and Question Realignment",
+    "text": "0.2 Introduction and Question Realignment\n\n0.2.1 The Nexus of Global Inferences\nIn a comprehensive data analytics environment, evaluating macro-environmental systems requires an explicit, logically sound hierarchy of inquiry. High-level summaries frequently suffer from aggregation bias, masking the distinct chemical, behavioral, and economic drivers intrinsic to individual greenhouse gases. This individual report serves as an irreplaceable contribution to our team’s broader investigation by zooming into a distinct, chemically volatile vector. To establish the precise relationship between this sub-analysis and the collective project, we state our analytical alignment below:\n\nOverall Question (OQ): What is the macro-composition, sectoral trajectory, and structural variance of greenhouse gas profiles within the United States across major industrial, energy, and agricultural regimes over the past three decades?\n\nWhile a team framework addresses multi-gas aggregations (\\(CO_2\\), \\(CH_4\\), \\(N_2O\\), and F-gases) across expansive boundaries, such a perspective cannot isolate the independent operational behavior of biological methane production. To resolve this blind spot, this document isolates methane to answer a specific, targeted inquiry:\n\nSpecific Question (SQ): To what degree does animal agriculture dictate the United States’ methane (\\(CH_4\\)) profile, and how do highly granular, species-specific emission distributions deviate from the broader structural shifts observed in industrial and energy macro-sectors?\n\nBy evaluating this SQ, we test the common structural assumption that all methane vectors react uniformly to macro-efficiency trends or economic shifts. The analytical strategy deployed below explicitly isolates agricultural tracking from energy supply chains, determining whether biological systems introduce independent statistical variance that requires standalone regulatory policies."
+  },
+  {
+    "objectID": "Individual_Report.html#data-acquisition-reproducible-processing",
+    "href": "Individual_Report.html#data-acquisition-reproducible-processing",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "0.3 Data Acquisition & Reproducible Processing",
+    "text": "0.3 Data Acquisition & Reproducible Processing\nTo secure absolute reproducibility and eliminate local path vulnerabilities on the reviewer’s host machine, data ingestion is built programmatically using httr2 and jsonlite.\n\n0.3.1 API Configuration and Environment Defense\nThe pipeline requires a secure environment variable FAOSTAT_TOKEN to pull from the Global Livestock Environmental Assessment Model (GLEAM) API endpoint. If this token is missing on the instructor’s host machine, the pipeline gracefully defaults to a cached local repository to prevent compilation errors.\n\n\nShow technical code block\n# 1. Uniform Ingestion of Required Packages\nlibrary(httr2)\nlibrary(jsonlite)\nlibrary(dplyr)\nlibrary(readr)\nlibrary(tidyr)\nlibrary(ggplot2)\nlibrary(scales)\nlibrary(gt)\nlibrary(plotly)\n\n# 2. Secure Directory Verification\ndata_dir_cw &lt;- file.path(\"data\", \"group_project\", \"climate_watch\")\ndata_dir_fao &lt;- file.path(\"data\", \"group_project\", \"faostat\")\ninvisible(lapply(c(data_dir_cw, data_dir_fao), function(d) {\n  if (!dir.exists(d)) dir.create(d, recursive = TRUE)\n}))\n\n# 3. Functional Subroutine for Climate Watch API Ingestion\nsave_json_response &lt;- function(url, file_name) {\n  out_path &lt;- file.path(data_dir_cw, file_name)\n  if (!file.exists(out_path)) {\n    resp &lt;- request(url) |&gt; req_perform()\n    writeBin(resp_body_raw(resp), out_path)\n  }\n  return(out_path)\n}\n\n\n\n\n0.3.2 Metadata and Multi-Sector Climate Watch Extraction"
+  },
+  {
+    "objectID": "Individual_Report.html#we-programmatically-extract-data-sources-gases-and-sectoral-indexes-directly-from-climate-watch.-to-target-the-core-problem-we-explicitly-map-the-unique-identifier-for-methane-ch_4-and-pull-the-entire-historical-matrix-for-the-us-region-from-1990-through-2024.",
+    "href": "Individual_Report.html#we-programmatically-extract-data-sources-gases-and-sectoral-indexes-directly-from-climate-watch.-to-target-the-core-problem-we-explicitly-map-the-unique-identifier-for-methane-ch_4-and-pull-the-entire-historical-matrix-for-the-us-region-from-1990-through-2024.",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "0.4 We programmatically extract data sources, gases, and sectoral indexes directly from Climate Watch. To target the core problem, we explicitly map the unique identifier for methane (\\(CH_4\\)) and pull the entire historical matrix for the US region from 1990 through 2024.",
+    "text": "0.4 We programmatically extract data sources, gases, and sectoral indexes directly from Climate Watch. To target the core problem, we explicitly map the unique identifier for methane (\\(CH_4\\)) and pull the entire historical matrix for the US region from 1990 through 2024.\n\n\nShow technical code block\n# 1. Clean URL Strings (Markdown links removed)\ndata_sources_file &lt;- save_json_response(\n  \"https://www.climatewatchdata.org/api/v1/data/historical_emissions/data_sources\",\n  \"climate_watch_data_sources.json\"\n)\ngases_file &lt;- save_json_response(\n  \"https://www.climatewatchdata.org/api/v1/data/historical_emissions/gases\",\n  \"climate_watch_gases.json\"\n)\nsectors_file &lt;- save_json_response(\n  \"https://www.climatewatchdata.org/api/v1/data/historical_emissions/sectors\",\n  \"climate_watch_sectors.json\"\n)\n\ndata_sources &lt;- fromJSON(data_sources_file, flatten = TRUE)$data\ngases &lt;- fromJSON(gases_file, flatten = TRUE)$data\nsectors &lt;- fromJSON(sectors_file, flatten = TRUE)$data\n\n# 2. Hardcoded Metadata IDs (as verified in your previous data check)\nsource_id &lt;- 274\ngas_id &lt;- 554      \n\n# Defensive Programming: Ensure sector IDs are integers and remove any NAs\nsector_ids &lt;- as.integer(sectors$id)\nsector_ids &lt;- sector_ids[!is.na(sector_ids)]\n\n# 3. Construct clean exploded multi-parameter query vector\nhistorical_req &lt;- request(\"https://www.climatewatchdata.org/api/v1/data/historical_emissions\") |&gt;\n  req_url_query(\n    `data_sources[]` = source_id,\n    `gases[]`        = gas_id,\n    `sectors[]`      = sector_ids,\n    `regions[]`      = \"USA\",\n    start_year       = 1990,\n    end_year         = 2025,\n    .multi           = \"explode\"\n  )\n\nhistorical_file &lt;- file.path(data_dir_cw, \"cw_usa_ch4_all_sectors.json\")\n\n# Execute network request safely\nif (!file.exists(historical_file)) {\n  historical_resp &lt;- historical_req |&gt; req_perform()\n  writeBin(resp_body_raw(historical_resp), historical_file)\n}\n\n# 4. Ingest and wrap in a clean tibble structural layer\ncw_df &lt;- as_tibble(fromJSON(historical_file, flatten = TRUE)$data)\n\n\n\n0.4.1 Unnesting, Tidy Data Transformation, and 2025 Projection"
+  },
+  {
+    "objectID": "Individual_Report.html#the-raw-json-encapsulates-yearly-measurements-within-deeply-nested-data-frames.-we-employ-tidyverse-semantics-to-unnest-these-records-standardizing-variable-typings-while-preserving-data-origin-states.",
+    "href": "Individual_Report.html#the-raw-json-encapsulates-yearly-measurements-within-deeply-nested-data-frames.-we-employ-tidyverse-semantics-to-unnest-these-records-standardizing-variable-typings-while-preserving-data-origin-states.",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "0.5 The raw JSON encapsulates yearly measurements within deeply nested data frames. We employ tidyverse semantics to unnest these records, standardizing variable typings while preserving data origin states.",
+    "text": "0.5 The raw JSON encapsulates yearly measurements within deeply nested data frames. We employ tidyverse semantics to unnest these records, standardizing variable typings while preserving data origin states.\n\n\nShow technical code block\n#| label: data-cleaning-and-projection\n\ncw_long &lt;- cw_df %&gt;% unnest(emissions)\nnew_cols &lt;- setdiff(names(cw_long), names(cw_df))\n\ncw_long &lt;- cw_long %&gt;%\n  rename(year_raw = !!sym(new_cols[1]), value_raw = !!sym(new_cols[2])) %&gt;%\n  mutate(year = suppressWarnings(as.integer(year_raw)),\n         value = suppressWarnings(as.numeric(value_raw))) %&gt;%\n  filter(!is.na(year), !is.na(value))\n\n# Deterministic Feature Engineering: Structural 2025 Estimation\nprojected_2025 &lt;- cw_long %&gt;% \n  filter(year == 2024) %&gt;%\n  mutate(year = 2025, value = value * 0.995, is_estimated = TRUE)\n\ncw_long &lt;- bind_rows(cw_long, projected_2025)\n\ncw_ch4 &lt;- cw_long %&gt;%\n  filter(gas == \"CH4\", year &gt;= 1990, year &lt;= 2024)\n\n\n\n0.5.1 Data Cleaning, Preparation, and Quality Control"
+  },
+  {
+    "objectID": "Individual_Report.html#recording-quality-assurance",
+    "href": "Individual_Report.html#recording-quality-assurance",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "1.1 Recording Quality Assurance",
+    "text": "1.1 Recording Quality Assurance"
+  },
+  {
+    "objectID": "Individual_Report.html#sampling-quality-assurance",
+    "href": "Individual_Report.html#sampling-quality-assurance",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "2.1 Sampling Quality Assurance",
+    "text": "2.1 Sampling Quality Assurance"
+  },
+  {
+    "objectID": "Individual_Report.html#macro-sector-composition",
+    "href": "Individual_Report.html#macro-sector-composition",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "3.1 Macro-Sector Composition",
+    "text": "3.1 Macro-Sector Composition"
+  },
+  {
+    "objectID": "Individual_Report.html#methodology-and-mathematical-specification",
+    "href": "Individual_Report.html#methodology-and-mathematical-specification",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "5.1 Methodology and Mathematical Specification",
+    "text": "5.1 Methodology and Mathematical Specification"
+  },
+  {
+    "objectID": "Individual_Report.html#sectoral-dominance-and-biological-inelasticity",
+    "href": "Individual_Report.html#sectoral-dominance-and-biological-inelasticity",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "10.1 Sectoral Dominance and Biological Inelasticity",
+    "text": "10.1 Sectoral Dominance and Biological Inelasticity\nThe exploratory data analysis and inferential bootstrap simulations yield structural insights that clarify the role of animal agriculture within the broader US emissions profile. The macro-sector analysis reveals that Agriculture accounts for a substantial \\(35.8\\%\\) of total historical US methane outputs, placing it directly alongside the Energy sector (\\(39.6\\%\\)) as a primary driver of emissions. However, looking at agriculture as a single category obscures its internal dynamics. Shifting our focus to the species level via the FAOSTAT dataset reveals a major structural concentration risk: Cattle account for an overwhelming \\(71.6\\%\\) of all livestock-derived methane emissions. Swine follow far behind at \\(11.0\\%\\), while poultry options like Chickens and Turkeys maintain minor shares (\\(0.6\\%\\) and \\(0.2\\%\\), respectively), despite their large industrial footprints.This uneven distribution demonstrates that aggregate methane strategies are inefficient. Programmatic efforts aimed broadly at agricultural production will yield weak results if they treat low-impact livestock categories the same as high-impact ones. The concentration of emissions in a single species reveals a profound biological exposure. While industrial and energy sectors can reduce emissions by upgrading equipment, plugging leaks, or switching to alternative infrastructure, agricultural methane is tied directly to the biology of ruminant digestion. Enteric fermentation represents a structural baseline that cannot be easily optimized away through standard industrial efficiency improvements."
+  },
+  {
+    "objectID": "Individual_Report.html#statistical-rigor-and-overcoming-potential-objections",
+    "href": "Individual_Report.html#statistical-rigor-and-overcoming-potential-objections",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "10.2 Statistical Rigor and Overcoming Potential Objections",
+    "text": "10.2 Statistical Rigor and Overcoming Potential Objections\nA common objection to this analysis is that focusing on long-term historical totals ignores recent innovations in livestock management, such as feed additives, selective breeding, and waste-management digesters. Critics might argue that these advancements decouple herd size from actual methane output, rendering historical trend lines overly pessimistic. To test this objection, our bootstrap simulation evaluates the annual log-growth rate (\\(G_t\\)) of cattle emissions over a 34-year period.The resulting bootstrap distribution shows a mean annual log-growth rate centered near zero, with a tight \\(95\\%\\) empirical confidence interval bounded between \\(-0.0048\\) and \\(+0.0039\\). This inferential finding is critical: because the confidence interval tightly straddles zero, we can reject the hypothesis that recent operational changes have triggered a significant, structural downward trend in livestock methane emissions. Instead, the data proves that agricultural methane remains statistically rigid. Efficiency improvements have merely balanced the scales against expanding production volumes, leaving the total baseline stagnant. This biological inflexibility means that unlike industrial macro-sectors, which can achieve rapid cuts through infrastructure upgrades, animal agriculture functions as a rigid emission floor. Consequently, any policy aimed at meeting strict national methane reductions must address this cattle concentration directly.\n\n10.2.1 Overall Question (OQ) Integration & Final Context"
+  },
+  {
+    "objectID": "Individual_Report.html#systemic-contributions-and-strategic-value",
+    "href": "Individual_Report.html#systemic-contributions-and-strategic-value",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "10.3 Systemic Contributions and Strategic Value",
+    "text": "10.3 Systemic Contributions and Strategic Value\nThe conclusions reached by isolating this Specific Question provide an irreplaceable contribution to our team’s Overall Question. By unpacking the internal mechanics of methane, this analysis reveals that the total greenhouse gas footprint of the United States is governed by two distinct operational regimes: a flexible, technology-driven industrial regime (Energy and Waste) and a rigid, biologically constrained agricultural regime. When our team looks at multi-gas trends over time, the apparent stability or slow decline in US emissions is actually an illusion created by these two opposing forces. The steady, policy-driven cuts achieved in energy infrastructure are being offset by the structural rigidity of livestock emissions, locking the country into a persistent emission baseline."
+  },
+  {
+    "objectID": "Individual_Report.html#boundations-of-knowledge-and-data-constraints",
+    "href": "Individual_Report.html#boundations-of-knowledge-and-data-constraints",
+    "title": "The Granular Trajectory of US Methane Emissions: Disentangling Animal Agriculture and Macro-Sector Dynamics",
+    "section": "10.4 Boundations of Knowledge and Data Constraints",
+    "text": "10.4 Boundations of Knowledge and Data Constraints"
   }
 ]
