@@ -1,0 +1,436 @@
+---
+title: "Emissions Impossible"
+---
+
+
+```{R}
+
+#CLIMATEWATCH DATA
+
+#READ IN THE DATA
+
+library(httr2)
+library(jsonlite)
+library(dplyr)
+library(readr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+
+# ----------------------------
+# 0) Folders
+# ----------------------------
+data_dir_group_project <- file.path("data", "group_project")
+if (!dir.exists(data_dir_group_project)) dir.create(data_dir_group_project, recursive = TRUE)
+
+data_dir_climate_watch <- file.path(data_dir_group_project, "climate_watch")
+if (!dir.exists(data_dir_climate_watch)) dir.create(data_dir_climate_watch, recursive = TRUE)
+
+# ----------------------------
+# 1) Helper to save JSON responses (your existing approach)
+# ----------------------------
+save_json_response <- function(url, file_name) {
+  out_path <- file.path(data_dir_climate_watch, file_name)
+  resp <- request(url) |> req_perform()
+  writeBin(resp_body_raw(resp), out_path)
+  out_path
+}
+
+# ----------------------------
+# 2) Pull metadata: data sources, gases, sectors
+#    (These endpoints are part of the Climate Watch API /api/v1 structure) [1](https://climatewatch-vizzuality.github.io/climate-watch/_docs/dev/API)
+# ----------------------------
+data_sources_file <- save_json_response(
+  "https://www.climatewatchdata.org/api/v1/data/historical_emissions/data_sources",
+  "climate_watch_data_sources.json"
+)
+
+gases_file <- save_json_response(
+  "https://www.climatewatchdata.org/api/v1/data/historical_emissions/gases",
+  "climate_watch_gases.json"
+)
+
+sectors_file <- save_json_response(
+  "https://www.climatewatchdata.org/api/v1/data/historical_emissions/sectors",
+  "climate_watch_sectors.json"
+)
+
+data_sources <- fromJSON(data_sources_file, flatten = TRUE)$data
+gases <- fromJSON(gases_file, flatten = TRUE)$data
+sectors <- fromJSON(sectors_file, flatten = TRUE)$data
+
+# Optional: inspect metadata
+# print(data_sources)
+# print(gases)
+# print(sectors)
+
+# ----------------------------
+# 3) IDs (keep yours)
+# ----------------------------
+source_id <- 274
+gas_id <- 554          # you used this for CH4
+# sector_id <- 3212     # your old single-sector filter (not used now)
+
+# Pull ALL sectors so bars can be color-coded by sector
+# (sectors dataframe typically contains id + name; use the id column)
+sector_ids <- sectors$id
+
+# ----------------------------
+# 4) Historical emissions request (ALL sectors, USA, 1990–2024)
+#    Parameters are passed as arrays using explode, matching your style. [1](https://climatewatch-vizzuality.github.io/climate-watch/_docs/dev/API)
+# ----------------------------
+historical_req <- request("https://www.climatewatchdata.org/api/v1/data/historical_emissions") |>
+  req_url_query(
+    `data_sources[]` = source_id,
+    `gases[]`        = gas_id,
+    `sectors[]`      = sector_ids,   # <-- ALL sectors
+    `regions[]`      = "USA",
+    start_year       = 1990,
+    end_year         = 2025,
+    .multi           = "explode"
+  )
+
+historical_file <- file.path(
+  data_dir_climate_watch,
+  "climate_watch_historical_emissions_usa_ch4_all_sectors_1990_2024.json"
+)
+
+historical_resp <- historical_req |> req_perform()
+writeBin(resp_body_raw(historical_resp), historical_file)
+
+# ----------------------------
+# 5) Load JSON -> data frame (this will include nested emissions)
+# ----------------------------
+climate_watch_raw <- fromJSON(historical_file, flatten = TRUE)
+cw_df <- as_tibble(climate_watch_raw$data)
+
+# ----------------------------
+# 6) Unnest emissions (THIS is where the years/values live)
+#    Your emissions column contains <data.frame[34 x 2]> per row.
+# ----------------------------
+cw_long <- cw_df %>%
+  unnest(emissions)
+
+# Identify the two new columns that came from emissions (usually year + value)
+new_cols <- setdiff(names(cw_long), names(cw_df))
+if (length(new_cols) != 2) {
+  stop(
+    "Expected exactly 2 columns inside `emissions`, but found: ",
+    paste(new_cols, collapse = ", "),
+    "\nRun: names(cw_df$emissions[[1]]) to see the nested column names."
+  )
+}
+
+cw_long <- cw_long %>%
+  rename(
+    year_raw  = !!sym(new_cols[1]),
+    value_raw = !!sym(new_cols[2])
+  ) %>%
+  mutate(
+    year  = suppressWarnings(as.integer(year_raw)),
+    value = suppressWarnings(as.numeric(value_raw))
+  ) %>%
+  filter(!is.na(year), !is.na(value))
+
+# --- INSERT ESTIMATION HERE ---
+# 6.5) Create 2025 projection
+# This clones 2024 data and adjusts it.
+projected_2025 <- cw_long %>% 
+  filter(year == 2024) %>%
+  mutate(
+    year = 2025,
+    # Example: Assume 0.5% decrease (change to suit your research)
+    value = value * 0.995, 
+    is_estimated = TRUE
+  )
+
+# Add the 2025 data to the main dataset
+cw_long <- bind_rows(cw_long, projected_2025)
+# ------------------------------
+
+
+# ----------------------------
+# 7) Filter to CH4 (your goal) + 5-year bins
+#    (Your dataset may still contain multiple gases; filter here.)
+# ----------------------------
+cw_ch4 <- cw_long %>%
+  filter(gas == "CH4") %>%
+  filter(year >= 1990, year <= 2024) %>%
+  mutate(
+    period_start = year - (year %% 5),
+    period_end   = period_start + 4L,
+    period       = paste0(period_start, "–", period_end)
+  )
+
+
+## 2024 and 2025 projection
+
+# ----------------------------
+# 6.5) Create 2024 & 2025 projections
+# ----------------------------
+# 1. Get the base year (2023)
+base_data_2023 <- cw_long %>% filter(year == 2023)
+
+# 2. Project 2024
+projected_2024 <- base_data_2023 %>%
+  mutate(
+    year = 2024,
+    value = value * 0.995, # Adjust this rate as needed
+    is_estimated = TRUE
+  )
+
+# 3. Project 2025 (based on the projected 2024)
+projected_2025 <- projected_2024 %>%
+  mutate(
+    year = 2025,
+    value = value * 0.995, # Compound the rate
+    is_estimated = TRUE
+  )
+
+# 4. Add both to the main dataset
+cw_long <- bind_rows(cw_long, projected_2024, projected_2025)
+# ------------------------------
+```
+
+
+```{r}
+
+# ----------------------------
+# 8) Diagnostic: Check latest year
+# ----------------------------
+cat("Latest year available in dataset: ", max(cw_long$year, na.rm = TRUE), "\n")
+cat("Total rows for 2025: ", sum(cw_long$year == 2025, na.rm = TRUE), "\n")
+
+```
+
+
+```{R}
+
+#CLIMATE WATCH CHARTS
+
+library(dplyr)
+library(ggplot2)
+library(scales)
+
+#Filter out totals
+cw_ch4 <- cw_ch4 %>%
+  filter(!sector %in% c("Total excluding LULUCF", "Other Fuel Combustion", "Manufacturing/Construction", "Building", "Industrial Processes", "Bunker Fuels", "Electricity/Heat", "Land Use, Land-Use Change and Forestry", "Total including LULUCF"))
+
+# 8) Aggregate: SUM within each 5-year bin by sector
+cw_5yr <- cw_ch4 %>%
+  group_by(period_start, period, sector) %>%
+  summarise(
+    emissions_5yr = sum(value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(period_start) %>%
+  mutate(period = factor(period, levels = unique(period)))
+
+# 9) Plot: sector color-coded bar chart
+bar_style <- "stacked"  # "stacked" or "dodged"
+
+p <- ggplot(cw_5yr, aes(x = period, y = emissions_5yr, fill = sector)) +
+  geom_col(position = if (bar_style == "dodged") position_dodge(width = 0.9) else "stack") +
+  scale_y_continuous(labels = label_number(big.mark = ",")) +
+  labs(
+    title    = "USA CH4 Emissions by Sector (5-year bins)",
+    subtitle = paste0("Aggregation: 5-year sum | Unit: ", unique(cw_ch4$unit)),
+    x        = "5-year period",
+    y        = "5-year SUM of emissions",
+    fill     = "Sector"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(p)
+
+
+```
+
+```{R}
+
+# ----------------------------
+# 5) Filter for Focus Sectors & Plot
+# ----------------------------
+
+# 1. Filter and assign bins correctly
+cw_focus <- cw_long %>%
+  filter(gas == "CH4") %>%
+  filter(sector %in% c("Agriculture", "Energy", "Fugitive Emissions")) %>%
+  mutate(
+    # Force 2020-2025 into one bin, handle others with standard 5-year logic
+    period = ifelse(year >= 2020, "2020–2025", 
+             paste0(year - (year %% 5), "–", (year - (year %% 5)) + 4))
+  )
+
+# 2. Aggregate and calculate percentages
+cw_final_focus <- cw_focus %>%
+  group_by(period, sector) %>%
+  summarise(emissions_5yr = sum(value, na.rm = TRUE), .groups = "drop") %>%
+  group_by(period) %>%
+  mutate(
+    percentage = emissions_5yr / sum(emissions_5yr),
+    # Only label segments > 5% to keep chart clean
+    label = ifelse(percentage > 0.05, percent(percentage, accuracy = 0.1), "")
+  ) %>%
+  ungroup()
+
+# 3. Plot
+p <- ggplot(cw_final_focus, aes(x = period, y = emissions_5yr, fill = sector)) +
+  geom_col(position = "fill") +
+  geom_text(aes(label = label), 
+            position = position_fill(vjust = 0.5), 
+            size = 3, color = "white", fontface = "bold") +
+  scale_y_continuous(labels = label_percent()) +
+  labs(
+    title    = "USA CH4 Emissions: Sectoral Composition",
+    subtitle = "Focus: Agriculture, Energy, and Fugitive Emissions | 2020–2025 includes projections",
+    x        = "5-year period",
+    y        = "Percentage of Total within selection",
+    fill     = "Sector"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+print(p)
+
+```
+
+
+```{R}
+## NEW CHARTS
+
+# 1) Aggregate over 1990–2024, excluding "Energy"
+cw_total <- cw_ch4 %>%
+  filter(year >= 1990, year <= 2024) %>% 
+  filter(sector != "Energy") %>%  # <--- THIS REMOVES ENERGY
+  group_by(sector) %>%
+  summarise(
+    total_emissions = sum(value, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    # Recalculate percentage so the remaining sectors sum to 100%
+    percentage = total_emissions / sum(total_emissions),
+    label = percent(percentage, accuracy = 0.1)
+  )
+
+# 2) Plot the Donut Chart
+p <- ggplot(cw_total, aes(x = 2, y = percentage, fill = sector)) +
+  geom_col(color = "white") +
+  coord_polar(theta = "y") +
+  xlim(0.5, 2.5) +  
+  geom_text(aes(label = label), 
+            position = position_stack(vjust = 0.5), 
+            size = 4, fontface = "bold") +
+  theme_void() + 
+  theme(legend.position = "right") +
+  labs(
+    title = "USA CH4 Emissions: Composition",
+    fill  = "Sector"
+  )
+
+print(p)
+
+```
+
+
+```{R}
+
+#FAOSTAT CODE - WEB SCRAPE AND SAVE LOCALLY - DON'T RUN THIS AGAIN
+
+# 1) Setup Directories ----------------------------------------
+data_dir_faostat <- file.path("data", "group_project", "faostat")
+if(!dir.exists(data_dir_faostat)) dir.create(data_dir_faostat, recursive = TRUE)
+
+# 2) Authentication -------------------------------------------
+# Fresh token from your active session: lrich@horizonmedia.com
+Sys.setenv(FAOSTAT_TOKEN = "eyJraWQiOiJVSFE2dmwrekFTaGRpSGpsOFFSK0d2ZW13RWIzSjZNdytYNTRURXZtNUNJPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiI5MTA4ZGRjYS02MTIxLTQ1NWEtYjQ0OS1lNGZjNDQwZTRjZjYiLCJpc3MiOiJodHRwczpcL1wvY29nbml0by1pZHAuZXUtd2VzdC0xLmFtYXpvbmF3cy5jb21cL2V1LXdlc3QtMV9iTkVMTk9DMnYiLCJ2ZXJzaW9uIjoyLCJjbGllbnRfaWQiOiIyY3NsdHNpZ2FvODVpdmhwNm9qcDFhaWM3byIsIm9yaWdpbl9qdGkiOiIwNDcwYjM2Ni0zYWRhLTRmMTctYmI4Ni01NmIzODJkOTUwMjAiLCJldmVudF9pZCI6IjYzYzViYzAyLTY5N2YtNDQ1ZC1hNGI5LTNmODM4MTA3Zjk3ZSIsInRva2VuX3VzZSI6ImFjY2VzcyIsInNjb3BlIjoiYXdzLmNvZ25pdG8uc2lnbmluLnVzZXIuYWRtaW4gcGhvbmUgb3BlbmlkIHByb2ZpbGUgZW1haWwiLCJhdXRoX3RpbWUiOjE3NzY1NDg4OTYsImV4cCI6MTc3NjU1MjQ5NiwiaWF0IjoxNzc2NTQ4ODk2LCJqdGkiOiJlZmQyOTc0Mi1jMjQ5LTQxN2UtODQ2NS1lMmYxNTI1MzkyNDkiLCJ1c2VybmFtZSI6ImxhdXJlbnJpY2hiZXRjaCJ9.AIruKzEXR6VVJ0RD2mFZDz7fLx-t8UAnnlq1r3C5vPdR_Wk82c7js2nyqPmLk1FmQHJhcuHiU1-3nfDlQh54eqp0iIJQYuY85PLcN7JBrucqDFE5Kt5gdlQhQhiZ4j8VUntKvZdQAVdhdm9BYuFmECxMd4OwdZqC3EkZ4APd-CgslaPX5lfyTQBUN460qjjto2wdEzHIgMPd7HkMbkrDgJP6f7TaulePsdZcf38lj_xIHuwXkvaIT2lSRZj0K-T7c09ipBBmRv9FvYtiBuYlfHAXrdiJDuk39bW4Pg-exKY5EetHbiGxZib7OFDlHoyECvgkvoVskUV29ADTAWX5yw")
+
+# 3) Packages & Helpers ---------------------------------------
+library(httr)
+library(stringr)
+library(tibble)
+
+base_url <- "https://faostatservices.fao.org/api/v1"
+
+fao_get_json <- function(path, query = list()) {
+  resp <- GET(paste0(base_url, path), query = query, add_headers(Authorization = paste("Bearer", Sys.getenv("FAOSTAT_TOKEN"))))
+  stop_for_status(resp)
+  js <- fromJSON(content(resp, as = "text", encoding = "UTF-8"), flatten = TRUE)
+  as_tibble(js$data)
+}
+
+fao_get_csv <- function(path, query = list()) {
+  # We use URLencode to prevent the "length 2" error when passing multiple codes
+  resp <- GET(paste0(base_url, path), query = query, add_headers(Authorization = paste("Bearer", Sys.getenv("FAOSTAT_TOKEN"))))
+  stop_for_status(resp)
+  read.csv(text = content(resp, as = "text", encoding = "UTF-8"), stringsAsFactors = FALSE, colClasses = "character", na.strings = c("", "NA")) %>% as_tibble()
+}
+
+# 4) Metadata & Filtering -------------------------------------
+area_meta <- fao_get_json("/en/definitions/domain/GLE/area") %>% rename(code = `Country Code`, label = `Country`)
+elem_meta <- fao_get_json("/en/definitions/domain/GLE/element") %>% rename(code = `Element Code`, label = `Element`)
+item_meta <- fao_get_json("/en/definitions/domain/GLE/item") %>% rename(code = `Item Code`, label = `Item`)
+
+# Get US Code (Length 1)
+us_code <- area_meta %>% filter(str_detect(label, regex("^United States", ignore_case = TRUE))) %>% slice(1) %>% pull(code)
+
+# Get Methane Codes (This might be Length 2+)
+ch4_codes_raw <- elem_meta %>% filter(str_detect(label, regex("methane|\\bch4\\b", ignore_case = TRUE))) %>% pull(code)
+ch4_codes_string <- paste(ch4_codes_raw, collapse = ",") # Collapses them into "code1,code2"
+
+# 5) Data Pull ------------------------------------------------
+years <- 1990:2024
+item_chunks <- split(as.character(item_meta$code), ceiling(seq_along(item_meta$code) / 50))
+
+results_list <- lapply(years, function(y) {
+  Sys.sleep(0.1) 
+  bind_rows(lapply(item_chunks, function(items) {
+    fao_get_csv("/en/data/GLE", query = list(
+      area = us_code, 
+      element = ch4_codes_string, # Now a single string, preventing the error
+      item = paste(items, collapse = ","), 
+      year = y, 
+      datasource = "DB4", 
+      output_type = "csv"
+    ))
+  }))
+})
+
+methane_us_1990plus <- bind_rows(results_list) %>%
+  mutate(Year = as.integer(Year), Value = as.numeric(Value))
+
+# 6) Export ---------------------------------------------------
+file_destination <- file.path(data_dir_faostat, "methane_us_1990plus.csv")
+write.csv(methane_us_1990plus, file = file_destination, row.names = FALSE)
+
+message("Success! Data saved to: ", file_destination)
+
+
+```
+
+```{r}
+
+## FAOSTAT DATA
+
+# 1) Load Libraries -------------------------------------------
+library(dplyr)
+library(ggplot2)
+
+# 2) Load the Data you saved today ----------------------------
+# This uses the specific location you created
+file_path <- file.path("data", "group_project", "faostat", "methane_us_1990plus.csv")
+
+if(file.exists(file_path)) {
+  methane_us <- read.csv(file_path)
+  message("Data loaded successfully!")
+} else {
+  stop("File not found! Make sure you are in the correct R Project.")
+}
+
+# 3) Quick Data Preview ---------------------------------------
+head(methane_us)
+
+
+```
