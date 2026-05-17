@@ -2,14 +2,14 @@
 title: "Mini-Project 04 - Going for the Gold"
 author: "laurenrichbetch"
 editor:
-    mode: source
+  mode: source
 format: 
   html:
     theme: lux
     toc: false
-    echo: false
+    execute:
+      echo: false
 ---
-
 
 #DATA PREP
 ::: {.panel-tabset .nav-pills}
@@ -265,45 +265,82 @@ write_csv(olympedia_medals, "data/mp04/olympedia_medal_results.csv")
 ```{r}
 
 #| label: top-us-gold-years
+
 #| message: false
+
 #| warning: false
+
 library(tidyverse)
+
 library(gt)
 
+
+
 # 1. Re-create us_baseline_data explicitly inside this chunk for the render environment
+
 us_baseline_data <- olympedia_medals %>%
+
   filter(year >= 1960) %>% # Anchor to the modern era
+
   filter(season == "Summer", country_code == "USA") %>%
+
   group_by(year) %>%
+
   summarize(
+
     Gold   = sum(gold, na.rm = TRUE),
+
     Silver = sum(silver, na.rm = TRUE),
+
     Bronze = sum(bronze, na.rm = TRUE),
+
     Total  = sum(total, na.rm = TRUE),
+
     .groups = "drop"
+
   )
+
+
 
 # 2. Clean the column names automatically so they are lowercase
+
 us_table_clean <- us_baseline_data %>% 
+
   rename_with(tolower)
 
-# 3. Extract and render the top 5 years safely
-us_table_clean %>%
-  dplyr::slice_max(order_by = gold, n = 5, with_ties = FALSE) %>%
-  dplyr::select(year, gold, silver, bronze, total) %>%
-  gt() %>%
-  tab_header(
-    title = "Top 5 Historical Gold Performances for Team USA",
-    subtitle = "Isolating the most dominant summer campaigns in the modern era"
-  ) %>%
-  cols_label(
-    year = "Olympic Year",
-    gold = "Gold Medals",
-    silver = "Silver Medals",
-    bronze = "Bronze Medals",
-    total = "Total Medals"
-  )
 
+
+# 3. Extract and render the top 5 years safely
+
+us_table_clean %>%
+
+  dplyr::slice_max(order_by = gold, n = 5, with_ties = FALSE) %>%
+
+  dplyr::select(year, gold, silver, bronze, total) %>%
+
+  gt() %>%
+
+  tab_header(
+
+    title = "Top 5 Historical Gold Performances for Team USA",
+
+    subtitle = "Isolating the most dominant summer campaigns in the modern era"
+
+  ) %>%
+
+  cols_label(
+
+    year = "Olympic Year",
+
+    gold = "Gold Medals",
+
+    silver = "Silver Medals",
+
+    bronze = "Bronze Medals",
+
+    total = "Total Medals"
+
+  )
 ```
 
 ```{r}
@@ -372,9 +409,10 @@ Great Britain, Australia and France see consistent performance when playing away
 #| label: EDA 2
 #| message: false
 #| warning: false
-library(gt)
+library(tidyverse)
 
-olympedia_medals |>
+# 1. Filter and summarize the host data
+host_data <- olympedia_medals |>
   filter(
     season == "Summer",
     (year == 2024 & country_code == "FRA") | 
@@ -385,37 +423,61 @@ olympedia_medals |>
   ) |>
   group_by(year, city, country_code) |>
   summarize(
-    golds = sum(gold, na.rm = TRUE),
-    silvers = sum(silver, na.rm = TRUE),
-    bronzes = sum(bronze, na.rm = TRUE),
-    total_medals = sum(total, na.rm = TRUE),
+    Gold = sum(gold, na.rm = TRUE),
+    Silver = sum(silver, na.rm = TRUE),
+    Bronze = sum(bronze, na.rm = TRUE),
     .groups = "drop"
   ) |>
-  arrange(desc(year)) |>
-  gt() |>
-  tab_header(
-    title = "Medal Performance Profiles of Recent Host Nations",
-    subtitle = "Tracking total medal hauls during domestic Olympic campaigns"
+  # Create a clean label for the chart axis (e.g., "2024 Paris (FRA)")
+  mutate(host_label = paste0(year, " ", city, " (", country_code, ")"))
+
+# 2. Reshape the data for plotting and fix medal order
+chart_ready <- host_data |>
+  pivot_longer(
+    cols = c(Gold, Silver, Bronze), 
+    names_to = "Medal_Type", 
+    values_to = "Count"
   ) |>
-  cols_label(
-    year = "Year",
-    city = "Host City",
-    country_code = "Host Nation",
-    golds = "Gold",
-    silvers = "Silver",
-    bronzes = "Bronze",
-    total_medals = "Total"
+  mutate(Medal_Type = factor(Medal_Type, levels = c("Bronze", "Silver", "Gold")))
+
+# 3. Plot the stacked bar chart
+ggplot(chart_ready, aes(x = reorder(host_label, year), y = Count, fill = Medal_Type)) +
+  geom_col(width = 0.6, color = "white", size = 0.2) +
+  # Adds text labels inside or on top of the bars showing the total medals
+  stat_summary(
+    fun = sum, 
+    aes(label = after_stat(y), group = host_label), 
+    geom = "text", 
+    vjust = -0.5, 
+    fontface = "bold"
+  ) +
+  scale_fill_manual(
+    values = c("Gold" = "gold3", "Silver" = "gray70", "Bronze" = "darkorange3"),
+    breaks = c("Gold", "Silver", "Bronze")
+  ) +
+  theme_minimal(base_size = 12) +
+  labs(
+    title = "Medal Performance Profiles of Recent Host Nations",
+    subtitle = "Tracking total medal hauls and breakdowns during domestic campaigns",
+    x = "Host Campaign",
+    y = "Total Medals Won",
+    fill = "Medal Type"
+  ) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    plot.title = element_text(face = "bold"),
+    legend.position = "top"
   )
 
 ```
 
-### Finding 4:
+### #Finding 4:
 Beijing 2008 saw incredibly strong performance, winning 100 medals total.
 
-### Finding 5:
+### #Finding 5:
 Hosting the Olympics doesn't guarantee that you'll win a lot of medals - Brazil 2016 is an example of this.
 
-### Finding 6:
+### #Finding 6:
 Gold is the most frequent medal won with Paris 2024 as an exception.
 
 ```{r}
@@ -423,33 +485,41 @@ Gold is the most frequent medal won with Paris 2024 as an exception.
 #| label: EDA 3
 #| message: false
 #| warning: false
+library(tidyverse)
 
+# 1. Pull the top disciplines using direct column names
 top_disciplines_us <- olympedia_medals |>
   filter(season == "Summer", country_code == "USA") |>
   group_by(discipline) |>
-  summarize(golds = sum(gold, na.rm = TRUE)) |>
-  slice_max(golds, n = 10)
+  summarize(golds = sum(gold, na.rm = TRUE), .groups = "drop") |>
+  slice_max(golds, n = 10, with_ties = FALSE)
 
+# 2. Build a standard horizontal bar chart
 ggplot(top_disciplines_us, aes(x = reorder(discipline, golds), y = golds)) +
-  geom_col(fill = "#0A2342") +
+  geom_col(fill = "gold3", width = 0.6) +
+  geom_text(aes(label = golds),组件 = "text", hjust = -0.2, fontface = "bold", size = 3.5) +
   coord_flip() +
   labs(
     title = "Top 10 Gold-Producing Disciplines for Team USA",
-    subtitle = "Identifies the core sports driving the baseline US medal model",
+    subtitle = "Core sports driving the baseline US medal model",
     x = "Discipline",
     y = "Total Historical Gold Medals"
   ) +
-  theme_minimal()
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold"),
+    panel.grid.major.y = element_blank()
+  )
 
 ```
 
-### Finding 7:
+### #Finding 7:
 Athletics (Track and Field) dominate this chart, accounting for the majority of all historical US gold medals.
 
-### Finding 8:
+### #Finding 8:
 There is a steep drop after Swimming, indicating these areas are smaller contributors of success versus the key driver.
 
-### Finding 9:
+### #Finding 9:
 The US scored lowest in tennis as the 'big three' (Novak Djokovic, Rafael Nadal, Roger Federer) have dominated the sport, leaving no room for US athletes to take home gold.
 
 
@@ -457,33 +527,43 @@ The US scored lowest in tennis as the 'big three' (Novak Djokovic, Rafael Nadal,
 #| label: EDA 4
 #| message: false
 #| warning: false
-library(gt)
+library(tidyverse)
 
-olympedia_medals |>
+# 1. Filter and prepare the top 5 disciplines data
+donut_data <- olympedia_medals |>
   filter(year == 2024, country_code == "USA", gold > 0) |>
   group_by(discipline) |>
   summarize(golds_won = sum(gold, na.rm = TRUE)) |>
   arrange(desc(golds_won)) |>
-  slice_head(n = 5) |>
-  gt() |>
-  tab_header(
+  slice_head(n = 5)
+
+# 2. Plot the donut chart
+ggplot(donut_data, aes(x = 2, y = golds_won, fill = reorder(discipline, -golds_won))) +
+  geom_col(width = 1, color = "white") +
+  coord_polar(theta = "y", start = 0) +
+  xlim(0.5, 2.5) + # This creates the blank inner circle hole
+  scale_fill_brewer(palette = "YlOrRd", direction = -1) + 
+  theme_void(base_size = 12) + 
+  labs(
     title = "Top 5 Gold-Producing Disciplines for USA in 2024",
-    subtitle = "Demonstrates concentration of success across core and modern programs"
-  ) |>
-  cols_label(
-    discipline = "Discipline",
-    golds_won = "Golds Won"
+    subtitle = "Concentration of success across top performing programs",
+    fill = "Discipline"
+  ) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.position = "right"
   )
 
 ```
 
-### Finding 10:
+### #Finding 10:
 Track and Field (Athletics) is the biggest driver of the US gold wins.
 
-### Finding 11:
+### #Finding 11:
 Swimming is a close second to Track and Field (Athletics), accounting for nearly one-third of gold medals.
 
-### Finding 12:
+### #Finding 12:
 As basketball only has a few gold medals available, therefore, the 2 wins is a huge accomplishment.
 
 
@@ -765,7 +845,7 @@ forecast_2028 %>%
 
 ```
 
-### Findings
+### #Findings
 Hosting the Olympics shifts the USA teams chances of winning the top spot.  The most likely scenario is that we win 50 gold metals, which is an increase from the 40 won in Paris 2024.
 
 
@@ -851,7 +931,7 @@ final_forecast_table %>%
 
 ```
 
-### Findings
+### #Findings
 There is high confidence that the US will win 50 gold metals in 2028. The benefit of Monte Carlo is that this approach accounts for the joint probability of events - it's highly unlikely that the US would experience both the worst and best case scenarios at the same time - therefore, extreme outliers have been removed.
 
 ### Final Deliverable
