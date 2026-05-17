@@ -50,6 +50,7 @@ To secure absolute reproducibility and eliminate local path vulnerabilities on t
 ### API Configuration and Environment Defense
 
 The pipeline requires a secure environment variable `FAOSTAT_TOKEN` to pull from the Global Livestock Environmental Assessment Model (GLEAM) API endpoint. If this token is missing on the instructor's host machine, the pipeline gracefully defaults to a cached local repository to prevent compilation errors.
+---
 
 ```{r}
 #| label: setup-and-reproducibility
@@ -85,9 +86,14 @@ save_json_response <- function(url, file_name) {
 }
 ```
 
-### Metadata and Multi-Sector Climate Watch Extraction
+---
 
-## We programmatically extract data sources, gases, and sectoral indexes directly from Climate Watch. To target the core problem, we explicitly map the unique identifier for methane ($CH_4$) and pull the entire historical matrix for the US region from 1990 through 2024.
+## Metadata and Multi-Sector Climate Watch Extraction
+
+We programmatically extract data sources, gases, and sectoral indexes directly from Climate Watch. To target the core problem, we explicitly map the unique identifier for methane ($CH_4$) and pull the entire historical matrix for the US region from 1990 through 2024.
+
+---
+
 
 ```{r}
 #| label: climate-watch-ingestion
@@ -145,7 +151,9 @@ cw_df <- as_tibble(fromJSON(historical_file, flatten = TRUE)$data)
 
 ### Unnesting, Tidy Data Transformation, and 2025 Projection
 
-## The raw JSON encapsulates yearly measurements within deeply nested data frames. We employ tidyverse semantics to unnest these records, standardizing variable typings while preserving data origin states.
+The raw JSON encapsulates yearly measurements within deeply nested data frames. We employ tidyverse semantics to unnest these records, standardizing variable typings while preserving data origin states.
+
+---
 
 ```{r}
 
@@ -174,13 +182,21 @@ cw_ch4 <- cw_long %>%
 
 ### Data Cleaning, Preparation, and Quality Control
 
-# When dealing with observational environmental data collections, checking data quality is critical. We must explicitly evaluate two components: recording quality and sampling quality to ensure our conclusions pass rigorous technical validation.
+When dealing with observational environmental data collections, checking data quality is critical. We must explicitly evaluate two components: recording quality and sampling quality to ensure our conclusions pass rigorous technical validation.
 
-## Recording Quality Assurance
-# Climate Watch acts as a secondary aggregator of primary United Nations Framework Convention on Climate Change (UNFCCC) submissions. A common error here is double-counting. For example, "Fugitive Emissions" (leakage from oil and gas infrastructure) are frequently nested inside "Energy" totals depending on the reporting tier. To avoid artificially inflating our variances, we explicitly isolate mutually exclusive macro-sectors. By removing overlapping classifications, we ensure that the denominator of our sector distribution sums to exactly 100% of independent economic operations, filtering out reporting noise.
+---
 
-## Sampling Quality Assurance
-# Agricultural metrics from FAOSTAT are bound by distinct biological and structural constraints. Livestock populations are calculated via annual farm surveys managed by national agricultural agencies, which carry an inherent statistical margin of error ($\pm 3.5\%$). Unlike industrial stack-monitoring, biological reporting contains missing tracking data for minor species (e.g., Mules and Asses). We handle these anomalies by avoiding arbitrary removal. Instead, we use exact multi-decimal tracking to evaluate their tiny footprint relative to the macro-sectors, confirming that data gaps in minor species do not bias our main conclusions.
+### Recording Quality Assurance
+
+Climate Watch acts as a secondary aggregator of primary United Nations Framework Convention on Climate Change (UNFCCC) submissions. A common error here is double-counting. For example, "Fugitive Emissions" (leakage from oil and gas infrastructure) are frequently nested inside "Energy" totals depending on the reporting tier. To avoid artificially inflating our variances, we explicitly isolate mutually exclusive macro-sectors. By removing overlapping classifications, we ensure that the denominator of our sector distribution sums to exactly 100% of independent economic operations, filtering out reporting noise.
+
+---
+
+### Sampling Quality Assurance
+Agricultural metrics from FAOSTAT are bound by distinct biological and structural constraints. Livestock populations are calculated via annual farm surveys managed by national agricultural agencies, which carry an inherent statistical margin of error ($\pm 3.5\%$). Unlike industrial stack-monitoring, biological reporting contains missing tracking data for minor species (e.g., Mules and Asses). We handle these anomalies by avoiding arbitrary removal. Instead, we use exact multi-decimal tracking to evaluate their tiny footprint relative to the macro-sectors, confirming that data gaps in minor species do not bias our main conclusions.
+
+---
+
 
 ```{r}
 
@@ -202,8 +218,10 @@ if (file.exists(faostat_file)) {
 ```
 
 ### Exploratory Data Analysis (EDA)
-## Macro-Sector Composition
-# To evaluate the structural framework of US methane outputs, we analyze the distribution of emissions across sectors across the 1990–2024 period. We exclude "Fugitive Emissions" to ensure our categories are mutually exclusive.
+
+Macro-Sector Composition: To evaluate the structural framework of US methane outputs, we analyze the distribution of emissions across sectors across the 1990–2024 period. We exclude "Fugitive Emissions" to ensure our categories are mutually exclusive.
+
+---
 
 ```{r}
 
@@ -234,7 +252,10 @@ plot_ly(cw_total,
 ```
 
 ### Granular Agricultural Livestock Distributions
-# By shifting our lens from global sectors down to specific animal species via FAOSTAT, we can expose the underlying biological composition of agricultural emissions without artificial 5-year aggregation bins.
+By shifting our lens from global sectors down to specific animal species via FAOSTAT, we can expose the underlying biological composition of agricultural emissions without artificial 5-year aggregation bins.
+
+---
+
 
 ```{r}
 
@@ -269,12 +290,12 @@ plot_ly(donut_data_custom,
 
 ### Advanced Statistical Inference: Computer-Based Bootstrap Simulation
 
-## Methodology and Mathematical Specification
-# To move past basic descriptive summaries, we implement a computer-based inferential method: Bootstrap Resampling. This allows us to quantify the true underlying distribution of year-over-year emission variations within the livestock sector without making strict parametric assumptions about normality. Observational data of animal emissions rarely follows a standard bell curve due to sudden shifts in livestock markets, supply chain issues, and regulatory updates.We formalize our resampled parameters as follows. Let $G_t$ represent the annual log-growth rate of enteric methane emissions:
+Methodology and Mathematical Specification: To move past basic descriptive summaries, we implement a computer-based inferential method: Bootstrap Resampling. This allows us to quantify the true underlying distribution of year-over-year emission variations within the livestock sector without making strict parametric assumptions about normality. Observational data of animal emissions rarely follows a standard bell curve due to sudden shifts in livestock markets, supply chain issues, and regulatory updates.We formalize our resampled parameters as follows. Let $G_t$ represent the annual log-growth rate of enteric methane emissions: gt=ln(vt/v(t-1))
+---
 
-# gt=ln(vt/v(t-1))
+We draw $B = 2000$ independent bootstrap replicates with replacement from the empirical distribution of $G_t$. For each replicate, we calculate the mean log-growth rate $\theta^*$:$$$\theta^* = \frac{1}{n}\sum_{i=1}^n G_i^*$$$This non-parametric approach generates an empirical distribution for our target estimator, providing robust standard errors that are unpolluted by linear or normal assumptions.
 
-# We draw $B = 2000$ independent bootstrap replicates with replacement from the empirical distribution of $G_t$. For each replicate, we calculate the mean log-growth rate $\theta^*$:$$$\theta^* = \frac{1}{n}\sum_{i=1}^n G_i^*$$$This non-parametric approach generates an empirical distribution for our target estimator, providing robust standard errors that are unpolluted by linear or normal assumptions.
+---
 
 ```{r}
 
@@ -329,7 +350,11 @@ ggplot(df_boot, aes(x = means)) +
 ```
 
 ### Data Presentation
-# To satisfy publication requirements, the processed livestock distributions are presented using advanced conditional formatting. This structure ensures high legibility for macro comparisons.
+
+To satisfy publication requirements, the processed livestock distributions are presented using advanced conditional formatting. This structure ensures high legibility for macro comparisons.
+
+---
+
 
 ```{r}
 #| label: process-livestock-data
@@ -401,30 +426,43 @@ donut_data_custom %>%
 
 ### Specific Question (SQ) Discussion & Synthesis
 
-## Sectoral Dominance and Biological Inelasticity
+# Sectoral Dominance and Biological Inelasticity
 
 The exploratory data analysis and inferential bootstrap simulations yield structural insights that clarify the role of animal agriculture within the broader US emissions profile. The macro-sector analysis reveals that Agriculture accounts for a substantial $35.8\%$ of total historical US methane outputs, placing it directly alongside the Energy sector ($39.6\%$) as a primary driver of emissions. However, looking at agriculture as a single category obscures its internal dynamics. Shifting our focus to the species level via the FAOSTAT dataset reveals a major structural concentration risk: Cattle account for an overwhelming $71.6\%$ of all livestock-derived methane emissions. Swine follow far behind at $11.0\%$, while poultry options like Chickens and Turkeys maintain minor shares ($0.6\%$ and $0.2\%$, respectively), despite their large industrial footprints.This uneven distribution demonstrates that aggregate methane strategies are inefficient. Programmatic efforts aimed broadly at agricultural production will yield weak results if they treat low-impact livestock categories the same as high-impact ones. The concentration of emissions in a single species reveals a profound biological exposure. While industrial and energy sectors can reduce emissions by upgrading equipment, plugging leaks, or switching to alternative infrastructure, agricultural methane is tied directly to the biology of ruminant digestion. Enteric fermentation represents a structural baseline that cannot be easily optimized away through standard industrial efficiency improvements.
+---
+
 
 ## Statistical Rigor and Overcoming Potential Objections
 
 A common objection to this analysis is that focusing on long-term historical totals ignores recent innovations in livestock management, such as feed additives, selective breeding, and waste-management digesters. Critics might argue that these advancements decouple herd size from actual methane output, rendering historical trend lines overly pessimistic. To test this objection, our bootstrap simulation evaluates the annual log-growth rate ($G_t$) of cattle emissions over a 34-year period.The resulting bootstrap distribution shows a mean annual log-growth rate centered near zero, with a tight $95\%$ empirical confidence interval bounded between $-0.0048$ and $+0.0039$. This inferential finding is critical: because the confidence interval tightly straddles zero, we can reject the hypothesis that recent operational changes have triggered a significant, structural downward trend in livestock methane emissions. Instead, the data proves that agricultural methane remains statistically rigid. Efficiency improvements have merely balanced the scales against expanding production volumes, leaving the total baseline stagnant. This biological inflexibility means that unlike industrial macro-sectors, which can achieve rapid cuts through infrastructure upgrades, animal agriculture functions as a rigid emission floor. Consequently, any policy aimed at meeting strict national methane reductions must address this cattle concentration directly.
+
+---
 
 ### Overall Question (OQ) Integration & Final Context
 
 ## Systemic Contributions and Strategic Value
 
 The conclusions reached by isolating this Specific Question provide an irreplaceable contribution to our team’s Overall Question. By unpacking the internal mechanics of methane, this analysis reveals that the total greenhouse gas footprint of the United States is governed by two distinct operational regimes: a flexible, technology-driven industrial regime (Energy and Waste) and a rigid, biologically constrained agricultural regime. When our team looks at multi-gas trends over time, the apparent stability or slow decline in US emissions is actually an illusion created by these two opposing forces. The steady, policy-driven cuts achieved in energy infrastructure are being offset by the structural rigidity of livestock emissions, locking the country into a persistent emission baseline.
+---
 
 ## Boundations of Knowledge and Data Constraints
 
-# Every statistical model has boundaries, and identifying these constraints is vital for maintaining academic rigor. The determinism of our historical data and our 2025 structural projection (which assumes a baseline $0.5\%$ efficiency decrease) relies entirely on a stable regulatory and economic landscape. There are two major unobserved variables that could completely alter these projections:
+Every statistical model has boundaries, and identifying these constraints is vital for maintaining academic rigor. The determinism of our historical data and our 2025 structural projection (which assumes a baseline $0.5\%$ efficiency decrease) relies entirely on a stable regulatory and economic landscape. There are two major unobserved variables that could completely alter these projections:
 
-# Macroeconomic Demand Shocks: If consumer preferences shift rapidly away from beef and dairy, or if international trade barriers depress US agricultural exports, herd sizes would contract sharply. This would drop total agricultural emissions below our bootstrap confidence intervals.
+---
 
-# Regulatory Interventions: The introduction of strict federal mandates—such as requiring methane-reducing feed additives or taxing enteric outputs—would alter the biological parameters of our models, breaking the historical patterns captured in our time-series data.
+Macroeconomic Demand Shocks: If consumer preferences shift rapidly away from beef and dairy, or if international trade barriers depress US agricultural exports, herd sizes would contract sharply. This would drop total agricultural emissions below our bootstrap confidence intervals.
 
-# Without these explicit policy and economic variables, our long-term projections remain a baseline calculation of current operational trends rather than an absolute prediction.
+---
+
+Regulatory Interventions: The introduction of strict federal mandates—such as requiring methane-reducing feed additives or taxing enteric outputs—would alter the biological parameters of our models, breaking the historical patterns captured in our time-series data.
+
+---
+
+Without these explicit policy and economic variables, our long-term projections remain a baseline calculation of current operational trends rather than an absolute prediction.
 
 ### Final Technical Synthesis
 
 In summary, this reproducible research document proves that animal agriculture—driven almost entirely by cattle populations—exerts a powerful, distorting influence on the US methane profile. While industrial macro-sectors offer flexible levers for emissions reduction, agricultural methane functions as a rigid biological anchor. This clear contrast demonstrates that a one-size-fits-all approach to environmental policy is fundamentally flawed. To build accurate projections and effective climate strategies, analysts must treat biological and industrial emission sources as distinct, decoupled systems.
+
+---
