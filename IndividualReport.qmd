@@ -30,7 +30,7 @@ This report establishes an accurate baseline of livestock emissions in the US fr
 
 ---
 
-## 2. Data Acquisition, Processing, and Reproducible Methodology
+## 2. Data Acquisition and Processing
 
 ### 2.1 Data Ingestion and API Setup
 The data pipeline is split into two main parts: tracking overall national sectors and breaking down emissions by animal species.
@@ -63,7 +63,7 @@ Here, $E$ is the sum of emissions for a sector, $t$ represents the years, and $j
 
 ---
 
-## 3. Macro Sector Analysis: The Anthropogenic Footprint of Agriculture
+## 3. Analysis: The  Footprint of Agriculture
 
 The Climate Watch data reveals a clear picture of methane production in the United States. When looking at the total methane emissions across our isolated sectors over this 34-year period, **Agriculture** stands out as one of the largest contributors.
 
@@ -75,7 +75,7 @@ Furthermore, agricultural methane is biological, which means that it comes from 
 
 ---
 
-## 4. Micro Livestock Analysis: Species-Level Disaggregation
+## 4. Micro Livestock Analysis: Species-Level
 
 To answer our second question, we isolated the livestock data from the UN FAOSTAT database, focusing on nine primary types of animals: Cattle, Swine, Horses, Sheep, Goats, Chickens, Turkeys, Mules/Asses, and Ducks. 
 
@@ -94,7 +94,7 @@ As the differences between these animals are so massive, the R code applies a sm
 
 ---
 
-## 5. Biological and Methodological Drivers of Variance
+## 5. Drivers of Variance
 
 The huge gap between cattle and other livestock comes down to two things: basic animal biology and how farms manage animal waste.
 
@@ -431,3 +431,76 @@ ggplot(donut_data_custom, aes(x = 2, y = Total_Value, fill = reorder(label, -Tot
   )
 
 ```
+
+```{r faostat_scrape}
+# =============================================================
+# 1) DATA ACQUISITION: WEB SCRAPE AND SAVE LOCALLY (DON'T RUN)
+# =============================================================
+
+# DECISIVE BYPASS: This stops the code from running even if Quarto ignores chunk settings
+if (TRUE) {
+  message("Skipping live API scrape. Using cached data folder resources.")
+} else {
+  # The rest of your code is safely locked away in this 'else' block and cannot run
+  
+  # Setup Directories  
+  data_dir_faostat <- file.path("data", "group_project", "faostat")
+  if(!dir.exists(data_dir_faostat)) dir.create(data_dir_faostat, recursive = TRUE)
+
+  # Authentication Environment Variable
+  Sys.setenv(FAOSTAT_TOKEN = "eyJraWQiOiJVSFE2dmw...")
+
+  library(httr)
+  library(stringr)
+  library(tibble)
+  library(jsonlite)
+
+  base_url <- "[https://faostatservices.fao.org/api/v1](https://faostatservices.fao.org/api/v1)"
+
+  fao_get_json <- function(path, query = list()) {
+    resp <- GET(paste0(base_url, path), query = query, add_headers(Authorization = paste("Bearer", Sys.getenv("FAOSTAT_TOKEN"))))
+    stop_for_status(resp)
+    js <- fromJSON(content(resp, as = "text", encoding = "UTF-8"), flatten = TRUE)
+    as_tibble(js$data)
+  }
+
+  fao_get_csv <- function(path, query = list()) {
+    resp <- GET(paste0(base_url, path), query = query, add_headers(Authorization = paste("Bearer", Sys.getenv("FAOSTAT_TOKEN"))))
+    stop_for_status(resp)
+    read.csv(text = content(resp, as = "text", encoding = "UTF-8"), stringsAsFactors = FALSE, colClasses = "character", na.strings = c("", "NA")) %>% as_tibble()
+  }
+
+  # Metadata & Filtering Logic
+  area_meta <- fao_get_json("/en/definitions/domain/GLE/area") %>% rename(code = `Country Code`, label = `Country`)
+  elem_meta <- fao_get_json("/en/definitions/domain/GLE/element") %>% rename(code = `Element Code`, label = `Element`)
+  item_meta <- fao_get_json("/en/definitions/domain/GLE/item") %>% rename(code = `Item Code`, label = `Item`)
+
+  us_code <- area_meta %>% filter(str_detect(label, regex("^United States", ignore_case = TRUE))) %>% slice(1) %>% pull(code)
+  ch4_codes_raw <- elem_meta %>% filter(str_detect(label, regex("methane|\\bch4\\b", ignore_case = TRUE))) %>% pull(code)
+  ch4_codes_string <- paste(ch4_codes_raw, collapse = ",")
+
+  # Multi-Year Extraction Loop
+  years <- 1990:2024
+  item_chunks <- split(as.character(item_meta$code), ceiling(seq_along(item_meta$code) / 50))
+
+  results_list <- lapply(years, function(y) {
+    Sys.sleep(0.1) 
+    bind_rows(lapply(item_chunks, function(items) {
+      fao_get_csv("/en/data/GLE", query = list(
+        area = us_code, 
+        element = ch4_codes_string, 
+        item = paste(items, collapse = ","), 
+        year = y, 
+        datasource = "DB4", 
+        output_type = "csv"
+      ))
+    }))
+  })
+
+  methane_us_1990plus <- bind_rows(results_list) %>%
+    mutate(Year = as.integer(Year), Value = as.numeric(Value))
+
+  # Export Data to Local Cache File
+  file_destination <- file.path(data_dir_faostat, "methane_us_1990plus.csv")
+  write.csv(methane_us_1990plus, file = file_destination, row.names = FALSE)
+}

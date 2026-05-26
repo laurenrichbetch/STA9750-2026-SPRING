@@ -4061,15 +4061,15 @@ window.Quarto = {
   <li><a href="#livestock-methane-emissions-in-the-united-states-19902024" id="toc-livestock-methane-emissions-in-the-united-states-19902024" class="nav-link active" data-scroll-target="#livestock-methane-emissions-in-the-united-states-19902024">Livestock Methane Emissions in the United States (1990–2024)</a>
   <ul class="collapse">
   <li><a href="#introduction" id="toc-introduction" class="nav-link" data-scroll-target="#introduction">1. Introduction</a></li>
-  <li><a href="#data-acquisition-processing-and-reproducible-methodology" id="toc-data-acquisition-processing-and-reproducible-methodology" class="nav-link" data-scroll-target="#data-acquisition-processing-and-reproducible-methodology">2. Data Acquisition, Processing, and Reproducible Methodology</a>
+  <li><a href="#data-acquisition-and-processing" id="toc-data-acquisition-and-processing" class="nav-link" data-scroll-target="#data-acquisition-and-processing">2. Data Acquisition and Processing</a>
   <ul class="collapse">
   <li><a href="#data-ingestion-and-api-setup" id="toc-data-ingestion-and-api-setup" class="nav-link" data-scroll-target="#data-ingestion-and-api-setup">2.1 Data Ingestion and API Setup</a></li>
   <li><a href="#data-cleaning-and-formatting" id="toc-data-cleaning-and-formatting" class="nav-link" data-scroll-target="#data-cleaning-and-formatting">2.2 Data Cleaning and Formatting</a></li>
   <li><a href="#sector-normalization" id="toc-sector-normalization" class="nav-link" data-scroll-target="#sector-normalization">2.3 Sector Normalization</a></li>
   </ul></li>
-  <li><a href="#macro-sector-analysis-the-anthropogenic-footprint-of-agriculture" id="toc-macro-sector-analysis-the-anthropogenic-footprint-of-agriculture" class="nav-link" data-scroll-target="#macro-sector-analysis-the-anthropogenic-footprint-of-agriculture">3. Macro Sector Analysis: The Anthropogenic Footprint of Agriculture</a></li>
-  <li><a href="#micro-livestock-analysis-species-level-disaggregation" id="toc-micro-livestock-analysis-species-level-disaggregation" class="nav-link" data-scroll-target="#micro-livestock-analysis-species-level-disaggregation">4. Micro Livestock Analysis: Species-Level Disaggregation</a></li>
-  <li><a href="#biological-and-methodological-drivers-of-variance" id="toc-biological-and-methodological-drivers-of-variance" class="nav-link" data-scroll-target="#biological-and-methodological-drivers-of-variance">5. Biological and Methodological Drivers of Variance</a>
+  <li><a href="#analysis-the-footprint-of-agriculture" id="toc-analysis-the-footprint-of-agriculture" class="nav-link" data-scroll-target="#analysis-the-footprint-of-agriculture">3. Analysis: The Footprint of Agriculture</a></li>
+  <li><a href="#micro-livestock-analysis-species-level" id="toc-micro-livestock-analysis-species-level" class="nav-link" data-scroll-target="#micro-livestock-analysis-species-level">4. Micro Livestock Analysis: Species-Level</a></li>
+  <li><a href="#drivers-of-variance" id="toc-drivers-of-variance" class="nav-link" data-scroll-target="#drivers-of-variance">5. Drivers of Variance</a>
   <ul class="collapse">
   <li><a href="#enteric-fermentation-digestive-emissions" id="toc-enteric-fermentation-digestive-emissions" class="nav-link" data-scroll-target="#enteric-fermentation-digestive-emissions">5.1 Enteric Fermentation (Digestive Emissions)</a></li>
   <li><a href="#waste-streams-and-manure-management" id="toc-waste-streams-and-manure-management" class="nav-link" data-scroll-target="#waste-streams-and-manure-management">5.2 Waste Streams and Manure Management</a></li>
@@ -4082,6 +4082,10 @@ window.Quarto = {
   </ul></li>
   <li><a href="#conclusions-and-policy-recommendations" id="toc-conclusions-and-policy-recommendations" class="nav-link" data-scroll-target="#conclusions-and-policy-recommendations">7. Conclusions and Policy Recommendations</a></li>
   </ul></li>
+  <li><a href="#section" id="toc-section" class="nav-link" data-scroll-target="#section">=============================================================</a></li>
+  <li><a href="#data-acquisition-web-scrape-and-save-locally-dont-run" id="toc-data-acquisition-web-scrape-and-save-locally-dont-run" class="nav-link" data-scroll-target="#data-acquisition-web-scrape-and-save-locally-dont-run">1) DATA ACQUISITION: WEB SCRAPE AND SAVE LOCALLY (DON’T RUN)</a></li>
+  <li><a href="#section-1" id="toc-section-1" class="nav-link" data-scroll-target="#section-1">=============================================================</a></li>
+  <li><a href="#decisive-bypass-this-stops-the-code-from-running-even-if-quarto-ignores-chunk-settings" id="toc-decisive-bypass-this-stops-the-code-from-running-even-if-quarto-ignores-chunk-settings" class="nav-link" data-scroll-target="#decisive-bypass-this-stops-the-code-from-running-even-if-quarto-ignores-chunk-settings">DECISIVE BYPASS: This stops the code from running even if Quarto ignores chunk settings</a></li>
   </ul>
 </nav>
     </div>
@@ -4129,8 +4133,8 @@ window.Quarto = {
 <p>This report establishes an accurate baseline of livestock emissions in the US from 1990 to 2024.</p>
 <hr>
 </section>
-<section id="data-acquisition-processing-and-reproducible-methodology" class="level2">
-<h2 class="anchored" data-anchor-id="data-acquisition-processing-and-reproducible-methodology">2. Data Acquisition, Processing, and Reproducible Methodology</h2>
+<section id="data-acquisition-and-processing" class="level2">
+<h2 class="anchored" data-anchor-id="data-acquisition-and-processing">2. Data Acquisition and Processing</h2>
 <section id="data-ingestion-and-api-setup" class="level3">
 <h3 class="anchored" data-anchor-id="data-ingestion-and-api-setup">2.1 Data Ingestion and API Setup</h3>
 <p>The data pipeline is split into two main parts: tracking overall national sectors and breaking down emissions by animal species.</p>
@@ -4154,16 +4158,16 @@ window.Quarto = {
 <hr>
 </section>
 </section>
-<section id="macro-sector-analysis-the-anthropogenic-footprint-of-agriculture" class="level2">
-<h2 class="anchored" data-anchor-id="macro-sector-analysis-the-anthropogenic-footprint-of-agriculture">3. Macro Sector Analysis: The Anthropogenic Footprint of Agriculture</h2>
+<section id="analysis-the-footprint-of-agriculture" class="level2">
+<h2 class="anchored" data-anchor-id="analysis-the-footprint-of-agriculture">3. Analysis: The Footprint of Agriculture</h2>
 <p>The Climate Watch data reveals a clear picture of methane production in the United States. When looking at the total methane emissions across our isolated sectors over this 34-year period, <strong>Agriculture</strong> stands out as one of the largest contributors.</p>
 <p>Agriculture accounts for a majority of the country’s structural methane emissions. The remaining emissions are split between the Waste sector (mostly methane gas escaping from landfills and wastewater treatment), the Energy sector (from burning fuels and utility operations), and a very small amount from heavy Industrial Processes.</p>
 <p>This breakdown matters a lot for climate policy. Most conversations about climate change focus on cutting emissions from energy and transportation. While energy transition is essential for carbon dioxide, this data proves that for methane, the biggest opportunity for improvement is in agriculture.</p>
 <p>Furthermore, agricultural methane is biological, which means that it comes from living beings rather than mechanical failures. This makes it harder to fix. You can fix an energy leak by patching a pipe, but you cannot stop natural biological processes without changing how we manage farms and livestock.</p>
 <hr>
 </section>
-<section id="micro-livestock-analysis-species-level-disaggregation" class="level2">
-<h2 class="anchored" data-anchor-id="micro-livestock-analysis-species-level-disaggregation">4. Micro Livestock Analysis: Species-Level Disaggregation</h2>
+<section id="micro-livestock-analysis-species-level" class="level2">
+<h2 class="anchored" data-anchor-id="micro-livestock-analysis-species-level">4. Micro Livestock Analysis: Species-Level</h2>
 <p>To answer our second question, we isolated the livestock data from the UN FAOSTAT database, focusing on nine primary types of animals: Cattle, Swine, Horses, Sheep, Goats, Chickens, Turkeys, Mules/Asses, and Ducks.</p>
 <p>The results show that livestock emissions are heavily concentrated in one place. Instead of being spread evenly across different types of meat and dairy farming, methane emissions are clearly driven by <strong>Cattle</strong>.</p>
 <table class="caption-top table">
@@ -4201,8 +4205,8 @@ window.Quarto = {
 <p>As the differences between these animals are so massive, the R code applies a smart formatting rule to the chart legend. For animals with high emissions like cattle and pigs, the percentages are rounded to one decimal place to keep the labels clean. For animals with tiny footprints like ducks or working mules, the code switches to three decimal places. Without this adjustment, these smaller categories would simply round down to 0.0%, hiding them from the final report.</p>
 <hr>
 </section>
-<section id="biological-and-methodological-drivers-of-variance" class="level2">
-<h2 class="anchored" data-anchor-id="biological-and-methodological-drivers-of-variance">5. Biological and Methodological Drivers of Variance</h2>
+<section id="drivers-of-variance" class="level2">
+<h2 class="anchored" data-anchor-id="drivers-of-variance">5. Drivers of Variance</h2>
 <p>The huge gap between cattle and other livestock comes down to two things: basic animal biology and how farms manage animal waste.</p>
 <section id="enteric-fermentation-digestive-emissions" class="level3">
 <h3 class="anchored" data-anchor-id="enteric-fermentation-digestive-emissions">5.1 Enteric Fermentation (Digestive Emissions)</h3>
@@ -4541,9 +4545,35 @@ window.Quarto = {
 </div>
 </div>
 </div>
-
-
 </section>
+</section>
+<section id="section" class="level1">
+<h1>=============================================================</h1>
+</section>
+<section id="data-acquisition-web-scrape-and-save-locally-dont-run" class="level1">
+<h1>1) DATA ACQUISITION: WEB SCRAPE AND SAVE LOCALLY (DON’T RUN)</h1>
+</section>
+<section id="section-1" class="level1">
+<h1>=============================================================</h1>
+</section>
+<section id="decisive-bypass-this-stops-the-code-from-running-even-if-quarto-ignores-chunk-settings" class="level1">
+<h1>DECISIVE BYPASS: This stops the code from running even if Quarto ignores chunk settings</h1>
+<p>if (TRUE) { message(“Skipping live API scrape. Using cached data folder resources.”) } else { # The rest of your code is safely locked away in this ‘else’ block and cannot run</p>
+<p># Setup Directories<br>
+data_dir_faostat &lt;- file.path(“data”, “group_project”, “faostat”) if(!dir.exists(data_dir_faostat)) dir.create(data_dir_faostat, recursive = TRUE)</p>
+<p># Authentication Environment Variable Sys.setenv(FAOSTAT_TOKEN = “eyJraWQiOiJVSFE2dmw…”)</p>
+<p>library(httr) library(stringr) library(tibble) library(jsonlite)</p>
+<p>base_url &lt;- “<a href="https://faostatservices.fao.org/api/v1">https://faostatservices.fao.org/api/v1</a>”</p>
+<p>fao_get_json &lt;- function(path, query = list()) { resp &lt;- GET(paste0(base_url, path), query = query, add_headers(Authorization = paste(“Bearer”, Sys.getenv(“FAOSTAT_TOKEN”)))) stop_for_status(resp) js &lt;- fromJSON(content(resp, as = “text”, encoding = “UTF-8”), flatten = TRUE) as_tibble(js$data) }</p>
+<p>fao_get_csv &lt;- function(path, query = list()) { resp &lt;- GET(paste0(base_url, path), query = query, add_headers(Authorization = paste(“Bearer”, Sys.getenv(“FAOSTAT_TOKEN”)))) stop_for_status(resp) read.csv(text = content(resp, as = “text”, encoding = “UTF-8”), stringsAsFactors = FALSE, colClasses = “character”, na.strings = c(““,”NA”)) %&gt;% as_tibble() }</p>
+<p># Metadata &amp; Filtering Logic area_meta &lt;- fao_get_json(“/en/definitions/domain/GLE/area”) %&gt;% rename(code = <code>Country Code</code>, label = <code>Country</code>) elem_meta &lt;- fao_get_json(“/en/definitions/domain/GLE/element”) %&gt;% rename(code = <code>Element Code</code>, label = <code>Element</code>) item_meta &lt;- fao_get_json(“/en/definitions/domain/GLE/item”) %&gt;% rename(code = <code>Item Code</code>, label = <code>Item</code>)</p>
+<p>us_code &lt;- area_meta %&gt;% filter(str_detect(label, regex(“^United States”, ignore_case = TRUE))) %&gt;% slice(1) %&gt;% pull(code) ch4_codes_raw &lt;- elem_meta %&gt;% filter(str_detect(label, regex(“methane|\bch4\b”, ignore_case = TRUE))) %&gt;% pull(code) ch4_codes_string &lt;- paste(ch4_codes_raw, collapse = “,”)</p>
+<p># Multi-Year Extraction Loop years &lt;- 1990:2024 item_chunks &lt;- split(as.character(item_meta<span class="math inline">\(code), ceiling(seq_along(item_meta\)</span>code) / 50))</p>
+<p>results_list &lt;- lapply(years, function(y) { Sys.sleep(0.1) bind_rows(lapply(item_chunks, function(items) { fao_get_csv(“/en/data/GLE”, query = list( area = us_code, element = ch4_codes_string, item = paste(items, collapse = “,”), year = y, datasource = “DB4”, output_type = “csv” )) })) })</p>
+<p>methane_us_1990plus &lt;- bind_rows(results_list) %&gt;% mutate(Year = as.integer(Year), Value = as.numeric(Value))</p>
+<p># Export Data to Local Cache File file_destination &lt;- file.path(data_dir_faostat, “methane_us_1990plus.csv”) write.csv(methane_us_1990plus, file = file_destination, row.names = FALSE) }</p>
+
+
 </section>
 
 </main> <!-- /main -->
